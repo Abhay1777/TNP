@@ -147,3 +147,152 @@ class CategoryRule(models.Model):
 
     def __str__(self):
         return f"{self.category} - {self.batch}"
+
+
+class Company(models.Model):
+    """Normalized Company Master record (T-BulkImport).
+    
+    Independent of individual batch drives or single offers. Holds college-wide
+    company identity, website, and aliases for duplicate matching.
+    """
+
+    name = models.CharField(max_length=255, unique=True, db_index=True)
+    website = models.CharField(max_length=255, blank=True, default="")
+    description = models.TextField(blank=True, default="")
+    aliases = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "placements_company"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class PlacementOpportunity(models.Model):
+    """Placement or internship hiring opportunity for a specific company and batch (T-BulkImport)."""
+
+    TECH_CHOICES = [
+        ("Tech", "Tech"),
+        ("Non-Tech", "Non-Tech"),
+        ("Both", "Both"),
+    ]
+    TYPE_CHOICES = [
+        ("Placement", "Placement"),
+        ("Internship", "Internship"),
+        ("Both", "Both"),
+    ]
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="opportunities")
+    batch = models.CharField(max_length=50, db_index=True)
+    designation = models.CharField(max_length=255)
+    tech_nontech = models.CharField(max_length=20, choices=TECH_CHOICES, default="Tech")
+    placement_internship = models.CharField(max_length=20, choices=TYPE_CHOICES, default="Placement")
+    eligibility_criteria = models.TextField(blank=True, default="")
+    eligible_departments = models.JSONField(default=list, blank=True)
+    department_flags = models.JSONField(default=dict, blank=True)
+    job_profiles = models.JSONField(default=list, blank=True)
+    skills = models.JSONField(default=list, blank=True)
+    emolument_raw = models.CharField(max_length=255, blank=True, default="")
+    emolument_value = models.FloatField(null=True, blank=True)
+    emolument_unit = models.CharField(max_length=50, blank=True, default="")
+    selection_process = models.TextField(blank=True, default="")
+    number_of_offers = models.IntegerField(null=True, blank=True)
+    source_sr_no = models.CharField(max_length=100, blank=True, default="")
+    company_registration = models.ForeignKey(
+        CompanyRegistration,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="linked_opportunities",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "placements_opportunity"
+        indexes = [
+            models.Index(fields=["batch", "company"]),
+            models.Index(fields=["batch", "designation"]),
+        ]
+
+    def __str__(self):
+        return f"{self.company.name} - {self.designation} ({self.batch})"
+
+
+class ImportSession(models.Model):
+    """Temporary import tracking session associated with an authorized uploader (T-BulkImport)."""
+
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("PARSED", "Parsed"),
+        ("VALIDATING", "Validating"),
+        ("VALIDATED", "Validated"),
+        ("PROCESSING", "Processing"),
+        ("COMPLETED", "Completed"),
+        ("FAILED", "Failed"),
+        ("CANCELLED", "Cancelled"),
+    ]
+
+    import uuid
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    uploaded_by = models.ForeignKey("base.User", on_delete=models.CASCADE, related_name="company_import_sessions")
+    file_name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=20)
+    file_size = models.PositiveIntegerField(default=0)
+    file_path = models.CharField(max_length=500, blank=True, default="")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
+    total_rows = models.PositiveIntegerField(default=0)
+    valid_rows = models.PositiveIntegerField(default=0)
+    warning_rows = models.PositiveIntegerField(default=0)
+    duplicate_rows = models.PositiveIntegerField(default=0)
+    error_rows = models.PositiveIntegerField(default=0)
+    processed_rows = models.PositiveIntegerField(default=0)
+    column_mapping = models.JSONField(default=dict, blank=True)
+    duplicate_policy = models.CharField(max_length=20, default="skip")
+    summary = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "placements_importsession"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"ImportSession {self.id} ({self.status}) - {self.file_name}"
+
+
+class ImportedRow(models.Model):
+    """Temporary staging row for a bulk import session before administrator confirmation (T-BulkImport)."""
+
+    STATUS_CHOICES = [
+        ("VALID", "Valid"),
+        ("WARNING", "Warning"),
+        ("DUPLICATE", "Duplicate"),
+        ("ERROR", "Error"),
+    ]
+
+    session = models.ForeignKey(ImportSession, on_delete=models.CASCADE, related_name="rows")
+    row_number = models.PositiveIntegerField()
+    source_sr_no = models.CharField(max_length=100, blank=True, default="")
+    raw_data = models.JSONField(default=dict)
+    normalized_data = models.JSONField(default=dict)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="VALID")
+    validation_messages = models.JSONField(default=list, blank=True)
+    duplicate_info = models.JSONField(default=dict, blank=True)
+    is_selected = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "placements_importedrow"
+        ordering = ["row_number"]
+        indexes = [
+            models.Index(fields=["session", "row_number"]),
+            models.Index(fields=["session", "status"]),
+        ]
+
+    def __str__(self):
+        return f"Row {self.row_number} [{self.status}] (Session: {self.session_id})"
+

@@ -1,0 +1,2465 @@
+<USER_REQUEST>
+You are a **Principal Software Architect, Senior Django/DRF Engineer, React/TypeScript Engineer, Database Architect, DevSecOps Engineer, Application Security Engineer, QA Automation Engineer, and UX Engineer**.
+
+You are working on the existing **TCET Training & Placement Automation Portal**.
+
+Your task is to implement a complete, production-ready **Admin → Company Database → Bulk Import** system based on the attached functional specification.
+
+The system must support importing approximately **500–1000+ company/placement records** from `.xlsx`, `.xls`, and `.csv` files while providing:
+
+**Upload → Auto Detect → Parse → Column Mapping → Validation → Duplicate Detection → Preview → Correction → Confirmation → Safe Database Commit → Background Processing → Import Report → Import History**
+
+The most important architectural requirement is:
+
+> **One Excel row contains two conceptual kinds of data: Company Master information + Placement/Internship Opportunity information.**
+
+Therefore, do NOT model the entire row as one permanent Company record.
+
+The system should conceptually separate:
+
+```text
+Company
+      +
+Placement / Internship Opportunity
+```
+
+This is essential because one company can have multiple drives, positions, batches, CTC values, eligibility criteria, and placement/internship types. 
+
+---
+
+# 1. NON-NEGOTIABLE RULES
+
+Before changing anything:
+
+**DO NOT rewrite the entire application.**
+
+**DO NOT modify unrelated pages.**
+
+**DO NOT alter existing authentication.**
+
+**DO NOT weaken permissions.**
+
+**DO NOT change existing Staff/Placement/Internship/Notification functionality unless required for integration.**
+
+**DO NOT create duplicate Company models if one already exists.**
+
+**DO NOT create duplicate Placement models if an appropriate model already exists.**
+
+**DO NOT hardcode imported companies into React.**
+
+**DO NOT directly write uploaded Excel rows into the production database.**
+
+**DO NOT trust frontend validation.**
+
+**DO NOT use fake success responses.**
+
+**DO NOT bypass CSRF.**
+
+**DO NOT use `csrf_exempt` merely to make file upload work.**
+
+**DO NOT expose uploaded files publicly.**
+
+**DO NOT allow an unauthorized user to access the import APIs by manually entering the URL.**
+
+Most importantly:
+
+> The new bulk-import feature must be isolated and must not create regressions on any existing application page.
+
+---
+
+# 2. FIRST PERFORM A COMPLETE CODEBASE AUDIT
+
+Before implementation, inspect the existing repository.
+
+Search the entire project for:
+
+### Models
+
+* Company
+* Placement
+* PlacementCompany
+* PlacementDrive
+* Internship
+* InternshipCompany
+* Opportunity
+* Notice
+* User
+* Role
+* Department
+
+### Backend
+
+* `models.py`
+* `serializers.py`
+* `views.py`
+* `urls.py`
+* permissions
+* service classes
+* repository/query functions
+* file upload utilities
+* Excel parsers
+* CSV parsers
+* Celery tasks
+* Redis configuration
+* transaction handling
+
+### Frontend
+
+Inspect:
+
+* Admin pages
+* Staff pages
+* Placement Officer pages
+* Internship Officer pages
+* Company management
+* Notice creation
+* Company dropdowns
+* Search components
+* Tables
+* React Query hooks
+* API service files
+* state management
+
+### Deployment
+
+Inspect:
+
+* Docker
+* environment variables
+* media configuration
+* static configuration
+* production settings
+* worker configuration.
+
+Do not start coding until you understand how companies and opportunities are currently represented.
+
+---
+
+# 3. CREATE AN ARCHITECTURE GAP REPORT FIRST
+
+Before changing code, create a temporary internal report containing:
+
+```text
+Current Company Model:
+Current Placement Model:
+Current Internship Model:
+Current Notice Model:
+Current Company APIs:
+Current Import APIs:
+Current Company UI:
+Existing duplicate constraints:
+Existing permissions:
+Existing Celery tasks:
+Existing file storage:
+```
+
+Then determine whether the new feature should:
+
+### Option A
+
+Extend the current architecture.
+
+or:
+
+### Option B
+
+Introduce a small new import/session abstraction.
+
+Prefer **Option A** whenever it is structurally sound.
+
+---
+
+# 4. DO NOT DUPLICATE BUSINESS DATA
+
+The imported company data should eventually support:
+
+```text
+Company
+   ↓
+Placement Opportunity
+   ↓
+Placement Notice
+```
+
+and:
+
+```text
+Company
+   ↓
+Internship Opportunity
+   ↓
+Internship Notice
+```
+
+Do not copy company information into every placement record unless the existing architecture requires snapshotting.
+
+---
+
+# 5. ADMIN NAVIGATION
+
+Add:
+
+```text
+Admin Dashboard
+   ↓
+Company Database
+   ├── All Companies
+   ├── Add Company
+   └── Bulk Import
+```
+
+The Bulk Import page must be accessible only to authorized users.
+
+The existing admin/company pages must continue working exactly as before.
+
+---
+
+# 6. ROLE SECURITY
+
+Determine from the existing permission system exactly which role is authorized to perform this operation.
+
+Possible candidates may include:
+
+* System Admin
+* authorized Staff
+* authorized T&P Clerk
+* other explicitly permitted administrative role
+
+Do NOT assume that every Django `is_staff=True` user should automatically have bulk-import permission.
+
+Use the project's actual authorization model.
+
+If a dedicated permission does not exist and one is required, create the **smallest scoped permission possible**, such as:
+
+```text
+can_import_companies
+```
+
+Do not grant broad administrative privileges just to enable this page.
+
+---
+
+# 7. BACKEND AUTHORIZATION
+
+Every import API must enforce:
+
+```text
+Authenticated
++
+Active User
++
+Authorized Role
++
+Required Permission
+```
+
+The following must be protected:
+
+```text
+/upload
+/validate
+/preview
+/edit-row
+/confirm
+/status
+/report
+/history
+/cancel
+```
+
+A user who manually enters the API URL must receive an appropriate:
+
+* 401
+* 403
+
+depending on authentication state.
+
+Do not return company data to unauthorized users.
+
+---
+
+# 8. IMPORT SESSION OWNERSHIP
+
+Every upload must create an `ImportSession` or equivalent temporary import object.
+
+It must be associated with the authenticated uploader.
+
+Conceptually:
+
+```text
+ImportSession
+---------------------
+id
+uploaded_by
+file_name
+file_type
+file_size
+status
+total_rows
+valid_rows
+warning_rows
+duplicate_rows
+error_rows
+created_at
+expires_at
+```
+
+A user must not be able to access another user's ImportSession merely by changing an ID in the URL.
+
+Enforce object-level authorization.
+
+---
+
+# 9. ZERO DATABASE WRITE DURING INITIAL UPLOAD
+
+This is one of the most important requirements.
+
+When a file is uploaded:
+
+```text
+Upload
+ ↓
+Parse
+ ↓
+Validate
+ ↓
+Duplicate Detection
+ ↓
+Preview
+```
+
+do NOT create permanent Company or Placement records.
+
+The specification explicitly requires the first phase to remain temporary until administrator confirmation. 
+
+Use:
+
+* temporary storage;
+* ImportSession;
+* serialized validated rows;
+* temporary staging records;
+
+as appropriate.
+
+---
+
+# 10. BULK IMPORT PAGE UI
+
+Create:
+
+**Bulk Import Company Data**
+
+Description:
+
+**Import 500–1000+ company and placement records at once. Upload Excel or CSV files and review the data before importing.**
+
+Supported:
+
+```text
+.xlsx
+.xls
+.csv
+```
+
+Provide:
+
+**Choose File**
+
+and:
+
+**Download Excel Template**
+
+Also support drag-and-drop where compatible.
+
+---
+
+# 11. EXACT 36-COLUMN TEMPLATE
+
+The import specification contains **36 columns**.
+
+The system must support the following exact source headers:
+
+```text
+Sr. No.
+Batch
+Name of the Company
+Eligibility Criteria
+AI&DS
+AI&ML
+CIVIL
+COMP
+CSE
+E&CS
+E&TC
+IOT
+IT
+MME
+MECH
+Designation
+Tech / Non-Tech
+Job Profile 1
+Job Profile 2
+Job Profile 3
+Job Profile 4
+Job Profile 5
+Skillset Required 1
+Skillset Required 2
+Skillset Required 3
+Skillset Required 4
+Skillset Required 5
+Skillset Required 6
+Skillset Required 7
+Skillset Required 8
+Emolument (CTC)
+Selection Process
+Company Website
+Placement / Internship
+Eligible Department
+No Of Offers
+```
+
+Treat these as the supported official source-column names for the bulk template. 
+
+Do not silently rename these source headers in the generated template.
+
+---
+
+# 12. SAMPLE TEMPLATE DOWNLOAD
+
+The Download Template button must generate a real `.xlsx` containing:
+
+* all 36 headers;
+* example row;
+* correct data types;
+* reasonable sample values;
+* comments/instructions where useful.
+
+But the example row must not automatically enter the database.
+
+---
+
+# 13. `Sr. No.` MUST NOT BE THE PRIMARY KEY
+
+The source:
+
+```text
+Sr. No.
+```
+
+is merely an import/reference number.
+
+Never use it as:
+
+* Django primary key;
+* Company ID;
+* Placement Opportunity ID.
+
+The system must continue using its own database-generated IDs.
+
+---
+
+# 14. FILE TYPE DETECTION
+
+Do not make the user manually choose Excel vs CSV.
+
+Detect:
+
+```text
+.xlsx → XLSX
+.xls  → XLS
+.csv  → CSV
+```
+
+But do not trust only the filename extension.
+
+Verify file content/type before parsing.
+
+---
+
+# 15. SECURE FILE UPLOAD
+
+The upload endpoint must validate:
+
+### Extension
+
+Allowed:
+
+```text
+.xlsx
+.xls
+.csv
+```
+
+### Actual file format
+
+Verify actual content where practical.
+
+### File size
+
+Use a configurable maximum:
+
+```text
+COMPANY_IMPORT_MAX_FILE_SIZE_MB
+```
+
+### Row limit
+
+Use:
+
+```text
+COMPANY_IMPORT_MAX_ROWS
+```
+
+### Sheet count
+
+Use:
+
+```text
+COMPANY_IMPORT_MAX_SHEETS
+```
+
+### Cell length
+
+Protect against extremely large cell contents.
+
+---
+
+# 16. PROTECT XLSX ZIP STRUCTURE
+
+Remember `.xlsx` is a ZIP-based format.
+
+Protect against:
+
+* decompression bombs;
+* enormous compressed/uncompressed ratio;
+* malicious XML;
+* excessive worksheets;
+* excessive formulas;
+* oversized embedded objects.
+
+The goal is to prevent one upload from exhausting the server.
+
+---
+
+# 17. CSV FORMULA INJECTION PROTECTION
+
+Imported strings beginning with spreadsheet formula characters such as:
+
+```text
+=
++
+-
+@
+```
+
+must not later become executable spreadsheet formulas when an import report/export is generated.
+
+Sanitize exported values appropriately.
+
+This is especially important for:
+
+* Company Name
+* Description
+* Website
+* Contact fields
+* Job profiles
+* Skills
+* Selection Process.
+
+---
+
+# 18. PATH TRAVERSAL PROTECTION
+
+Never create filesystem paths directly from the original filename.
+
+Do not trust:
+
+```text
+../../filename
+```
+
+or similar values.
+
+Generate a safe internal storage name:
+
+```text
+import_<uuid>.<extension>
+```
+
+Keep uploaded files outside executable/static public directories unless there is an explicit secure media-serving requirement.
+
+---
+
+# 19. MIME / CONTENT SECURITY
+
+Do not trust:
+
+```text
+Content-Type
+```
+
+sent by the browser as the sole validation mechanism.
+
+Validate extension + actual content.
+
+Do not allow arbitrary files such as:
+
+* executable binaries;
+* scripts;
+* HTML;
+* PHP;
+* JavaScript;
+
+to be uploaded as imports.
+
+---
+
+# 20. STEP 1 — FILE SUMMARY
+
+After upload, show:
+
+```text
+Selected File
+
+companies.xlsx
+
+File type:
+Excel Workbook (.xlsx)
+
+Size:
+1.8 MB
+
+Rows:
+847
+
+Columns:
+36
+
+Sheet:
+Company Data
+```
+
+Allow:
+
+```text
+[ Change File ]
+[ Continue ]
+```
+
+Do not write permanent database data yet.
+
+---
+
+# 21. STEP 2 — COLUMN MAPPING
+
+Automatically detect matching columns.
+
+Example:
+
+```text
+Name of the Company
+        ↓
+company_name
+
+Eligibility Criteria
+        ↓
+eligibility_criteria
+
+AI&DS
+        ↓
+eligible_ai_ds
+```
+
+If uploaded headers differ slightly:
+
+```text
+Company Name
+```
+
+suggest:
+
+```text
+Company Name → Name of the Company
+```
+
+but require administrator confirmation when confidence is low.
+
+---
+
+# 22. COLUMN MAPPING SECURITY
+
+The frontend mapping is NOT trusted.
+
+The backend must receive and validate:
+
+```text
+source column
+→
+allowed target field
+```
+
+Do not allow the client to map an arbitrary column to internal fields such as:
+
+* `created_by`
+* `is_superuser`
+* `permissions`
+* `database_id`
+* internal security fields
+* raw foreign-key identifiers
+
+Only expose an explicit safe whitelist of importable fields.
+
+---
+
+# 23. REQUIRED VS OPTIONAL FIELDS
+
+Determine requiredness from the actual backend model/business rules.
+
+At minimum:
+
+### Required
+
+* Company Name
+* Batch
+* Eligibility Criteria where current business logic requires it
+* Designation where required
+* Tech / Non-Tech where required
+* Emolument where required
+* Placement/Internship
+* relevant department eligibility
+* Offers where required
+
+Do not automatically force every field to be mandatory.
+
+If the existing business logic allows missing values, show:
+
+```text
+⚠ Warning
+```
+
+instead of:
+
+```text
+❌ Error
+```
+
+---
+
+# 24. COMPANY VS OPPORTUNITY DATA
+
+This distinction must exist internally.
+
+### Company Master Data
+
+Conceptually:
+
+```text
+company_name
+website
+description/about_company
+aliases
+contact information
+industry/location where supported
+```
+
+### Opportunity Data
+
+Conceptually:
+
+```text
+batch
+eligibility
+eligible_departments
+designation
+tech_nontech
+job_profiles
+skills
+emolument
+selection_process
+placement_or_internship
+number_of_offers
+```
+
+Do not duplicate stable company information for each opportunity unnecessarily.
+
+---
+
+# 25. DEPARTMENT FLAGS
+
+The Excel contains:
+
+```text
+AI&DS
+AI&ML
+CIVIL
+COMP
+CSE
+E&CS
+E&TC
+IOT
+IT
+MME
+MECH
+```
+
+Treat these as structured eligibility information.
+
+For example:
+
+```text
+IT = YES
+CSE = YES
+MECH = NO
+```
+
+should result in:
+
+```text
+eligible_departments = [
+    "IT",
+    "CSE"
+]
+```
+
+Use the exact department vocabulary already supported by the project.
+
+---
+
+# 26. `Eligible Department` CONSISTENCY
+
+The file also contains:
+
+```text
+Eligible Department
+```
+
+If both:
+
+* department flags;
+* Eligible Department
+
+are supplied, validate consistency.
+
+Example:
+
+```text
+IT = YES
+CSE = YES
+
+Eligible Department = IT,CSE
+```
+
+✅ valid
+
+But:
+
+```text
+IT = YES
+CSE = YES
+
+Eligible Department = MECH
+```
+
+should generate:
+
+```text
+⚠ Eligibility Department Mismatch
+```
+
+Do not silently overwrite one source with another.
+
+Define which source is authoritative and document it.
+
+---
+
+# 27. JOB PROFILES
+
+Convert:
+
+```text
+Job Profile 1
+Job Profile 2
+Job Profile 3
+Job Profile 4
+Job Profile 5
+```
+
+into a structured collection/list where the existing application architecture supports it.
+
+Ignore blank profile columns.
+
+Maintain original order.
+
+---
+
+# 28. SKILLS
+
+Similarly convert:
+
+```text
+Skillset Required 1
+...
+Skillset Required 8
+```
+
+into a structured skill list.
+
+Ignore blank values.
+
+Preserve ordering if it has business significance.
+
+Do not store eight unrelated database columns unless the existing schema specifically requires that.
+
+---
+
+# 29. TECHNOLOGY TYPE
+
+Normalize values into controlled choices:
+
+```text
+Tech
+Non-Tech
+Both
+```
+
+Handle harmless variations such as:
+
+```text
+TECH
+technical
+Tech Job
+NON TECH
+Non-Technical
+```
+
+according to an explicit normalization map.
+
+Do not silently accept arbitrary values.
+
+---
+
+# 30. BATCH NORMALIZATION
+
+Batch is a string, not necessarily an integer.
+
+Support existing formats such as:
+
+```text
+2026
+2026-27
+2027 Passout
+```
+
+only if the project's existing business rules support them.
+
+Do not destroy the original source value.
+
+If normalization is necessary, keep:
+
+```text
+batch_raw
+batch_normalized
+```
+
+where appropriate.
+
+---
+
+# 31. EMOLUMENT / CTC
+
+Support values such as:
+
+```text
+6 LPA
+₹6 LPA
+600000
+6,00,000
+7.5 LPA
+₹25,000/month
+```
+
+Do not simply cast arbitrary text to a number.
+
+Use an appropriate normalized representation.
+
+Conceptually:
+
+```text
+emolument_raw
+emolument_value
+emolument_unit
+```
+
+Examples:
+
+```text
+₹7.5 LPA
+
+value = 7.5
+unit = LPA
+```
+
+or:
+
+```text
+₹25,000/month
+
+value = 25000
+unit = MONTHLY_STIPEND
+```
+
+Preserve raw data where useful for display/audit.
+
+---
+
+# 32. SELECTION PROCESS
+
+Treat Selection Process as text or structured stages according to the existing application.
+
+Examples:
+
+```text
+Aptitude → Technical → HR
+```
+
+or:
+
+```text
+Online Assessment → Interview → HR
+```
+
+Do not execute any imported value.
+
+It must be treated purely as data.
+
+---
+
+# 33. COMPANY WEBSITE
+
+Validate URL format.
+
+Accept:
+
+```text
+https://www.tcs.com
+```
+
+If the existing UX allows:
+
+```text
+www.tcs.com
+```
+
+normalize it safely to HTTPS.
+
+Do not perform outbound HTTP requests to arbitrary imported URLs merely for validation.
+
+This avoids creating unnecessary SSRF risk.
+
+---
+
+# 34. NUMBER OF OFFERS
+
+Require numeric values according to the application's rules.
+
+Valid:
+
+```text
+10
+25
+50
+```
+
+Invalid:
+
+```text
+ten
+abc
+```
+
+Treat `N/A` according to the application's business rules.
+
+---
+
+# 35. ROW-LEVEL VALIDATION
+
+Validate all rows.
+
+Do not stop at row 1.
+
+Produce:
+
+```text
+Total: 847
+
+Valid: 810
+Warnings: 21
+Duplicates: 12
+Errors: 4
+```
+
+Every problem must retain:
+
+* row number;
+* field;
+* supplied value where safe;
+* error/warning code;
+* human-readable explanation.
+
+---
+
+# 36. PREVIEW
+
+Build a proper preview page.
+
+Because there are 36 columns, do NOT squeeze all columns into a tiny table.
+
+Use:
+
+* horizontally scrollable table;
+* sticky header;
+* sticky identifier columns;
+* pagination;
+* search;
+* status filters;
+* row expansion;
+* column visibility.
+
+---
+
+# 37. PREVIEW FILTERS
+
+Provide:
+
+```text
+All
+Valid
+Warnings
+Duplicates
+Errors
+```
+
+Also provide search:
+
+```text
+Search company...
+```
+
+Search should operate efficiently against the temporary preview dataset.
+
+---
+
+# 38. ROW DETAILS
+
+Clicking a row should open a detail panel showing all 36 imported fields grouped logically:
+
+### Basic
+
+* Sr No
+* Batch
+* Company
+
+### Eligibility
+
+* Eligibility Criteria
+* Department flags
+* Eligible Department
+
+### Opportunity
+
+* Designation
+* Tech/Non-Tech
+* Placement/Internship
+* No. of Offers
+
+### Job Profiles
+
+* 1–5
+
+### Skills
+
+* 1–8
+
+### Compensation
+
+* Emolument
+
+### Selection
+
+* Selection Process
+
+### Website
+
+* Company Website
+
+This is much easier than trying to show everything in one table.
+
+---
+
+# 39. INLINE CORRECTION
+
+Allow authorized administrators to edit temporary preview rows where practical.
+
+Example:
+
+```text
+Job Profile 1:
+[ Software Engineer ]
+```
+
+After correction:
+
+re-run validation for that row.
+
+Do not alter permanent database data at this stage.
+
+---
+
+# 40. DUPLICATE DETECTION
+
+Duplicate detection must happen at two levels.
+
+### Company-level
+
+Potential same company:
+
+```text
+TCS
+T.C.S.
+Tata Consultancy Services
+```
+
+### Opportunity-level
+
+Same company may legitimately have:
+
+```text
+TCS + 2027 + Software Engineer + Placement
+TCS + 2027 + Data Analyst + Placement
+TCS + 2027 + Software Developer + Internship
+```
+
+These must NOT automatically be treated as identical.
+
+Use an appropriate opportunity uniqueness/comparison strategy.
+
+---
+
+# 41. FUZZY MATCHING SAFETY
+
+Fuzzy matching is a **warning mechanism**, not an automatic destructive merge.
+
+Show:
+
+```text
+Possible Duplicate
+
+Uploaded:
+TCS
+
+Existing:
+Tata Consultancy Services
+
+Similarity:
+96%
+
+[Skip]
+[Update Existing]
+[Keep Separate]
+```
+
+Never automatically merge a fuzzy match.
+
+---
+
+# 42. DUPLICATE POLICY
+
+Allow:
+
+```text
+Skip duplicates
+Update existing
+Keep separate
+```
+
+But define exactly what "Update Existing" means.
+
+Only update fields permitted by the import model.
+
+Do not allow the import to overwrite:
+
+* audit fields;
+* ownership;
+* unrelated placement applications;
+* student selections;
+* sensitive internal records.
+
+---
+
+# 43. FINAL CONFIRMATION
+
+Before actual persistence, show:
+
+```text
+Confirm Import
+
+Total records:
+847
+
+New:
+782
+
+Updates:
+31
+
+Duplicates:
+21
+
+Invalid:
+13
+```
+
+Explain clearly:
+
+> Only valid records according to the selected import policy will be written to the database.
+
+Button:
+
+**Confirm Import**
+
+---
+
+# 44. FINAL SECURITY REVALIDATION
+
+This is mandatory.
+
+The backend MUST NOT trust the previous preview.
+
+At confirmation:
+
+1. Verify authentication.
+2. Verify permission.
+3. Verify ImportSession ownership.
+4. Verify session has not expired.
+5. Verify session has not already been imported.
+6. Revalidate all rows.
+7. Re-check current database duplicates.
+8. Re-check constraints.
+9. Apply duplicate policy.
+10. Start transaction/background task.
+
+This protects against:
+
+* stale previews;
+* concurrent imports;
+* manipulated requests;
+* TOCTOU/race conditions.
+
+---
+
+# 45. DATABASE TRANSACTION
+
+The final commit must be transaction-safe.
+
+If processing synchronously:
+
+```text
+BEGIN
+ ↓
+Validate
+ ↓
+Bulk Create/Update
+ ↓
+COMMIT
+```
+
+If a critical failure occurs:
+
+```text
+ROLLBACK
+```
+
+Do not leave the database partially updated unintentionally.
+
+---
+
+# 46. CELERY FOR LARGE IMPORTS
+
+Since the application already uses Celery/Redis, use Celery for sufficiently large confirmed imports.
+
+Recommended flow:
+
+```text
+Admin Confirm
+      ↓
+Create background task
+      ↓
+Return ImportSession ID
+      ↓
+Celery
+      ↓
+Process batches
+      ↓
+Update progress
+      ↓
+Complete
+```
+
+The UI should poll or use the existing task-status mechanism.
+
+Do not block the browser for a long-running 1000-row import.
+
+---
+
+# 47. PROGRESS UI
+
+Show genuine progress:
+
+```text
+Importing...
+
+437 / 782
+
+██████████████░░░░░ 56%
+```
+
+Do not fake percentage values.
+
+Progress should correspond to actual processed records.
+
+---
+
+# 48. RESULT PAGE
+
+After success:
+
+```text
+Import Completed
+
+Total Processed: 847
+Imported: 782
+Updated: 31
+Skipped: 21
+Failed: 13
+```
+
+Buttons:
+
+```text
+View Companies
+Download Import Report
+Import Another File
+```
+
+---
+
+# 49. IMPORT REPORT
+
+Provide a downloadable report with:
+
+```text
+Row Number
+Company Name
+Status
+Reason
+Existing Company ID / Opportunity ID where safe
+```
+
+Statuses:
+
+```text
+Imported
+Updated
+Skipped
+Warning
+Invalid
+Failed
+```
+
+Sanitize values before generating Excel to prevent formula injection.
+
+---
+
+# 50. IMPORT HISTORY
+
+Create a history page showing:
+
+```text
+Date
+File
+Uploaded By
+Rows
+Imported
+Updated
+Skipped
+Errors
+Status
+Duration
+```
+
+Clicking a record should display its summary.
+
+---
+
+# 51. IMPORT SESSION EXPIRATION
+
+Temporary sessions should expire after a configured time.
+
+After expiry:
+
+* preview inaccessible;
+* confirm blocked;
+* temporary file deleted/cleaned;
+* session marked `EXPIRED`.
+
+Do not leave temporary uploads on disk forever.
+
+---
+
+# 52. CLEANUP
+
+Use a scheduled cleanup job where appropriate.
+
+Clean:
+
+* expired import sessions;
+* temporary files;
+* staging data.
+
+Do not delete permanent Company/Placement records during cleanup.
+
+---
+
+# 53. PLACEMENT OPPORTUNITY ARCHITECTURE
+
+Where compatible with the existing project, represent the imported row conceptually as:
+
+```text
+COMPANY
+ ├── company_id
+ ├── company_name
+ ├── website
+ ├── description
+ └── aliases
+
+PLACEMENT_OPPORTUNITY
+ ├── opportunity_id
+ ├── company_id
+ ├── batch
+ ├── eligibility
+ ├── designation
+ ├── tech_or_nontech
+ ├── job_profiles
+ ├── skills
+ ├── emolument
+ ├── selection_process
+ ├── placement_or_internship
+ ├── eligible_departments
+ └── number_of_offers
+```
+
+Do not implement this blindly. First map it to existing models and reuse existing structures whenever possible.
+
+---
+
+# 54. FUTURE PLACEMENT NOTICE INTEGRATION
+
+The imported opportunity must be usable by the existing Staff placement notice workflow.
+
+Expected future flow:
+
+```text
+Admin
+ ↓
+Bulk Import
+ ↓
+Company + Opportunity
+ ↓
+Database
+ ↓
+Staff
+ ↓
+Create Placement Notice
+ ↓
+Search Company
+ ↓
+Select Opportunity
+ ↓
+Auto-fill
+ ↓
+Edit
+ ↓
+Preview
+ ↓
+Publish
+```
+
+When searching, show meaningful information such as:
+
+```text
+Tata Consultancy Services
+Software Engineer
+Batch 2027
+₹7.5 LPA
+Placement
+Eligible: IT, CSE
+```
+
+---
+
+# 55. DO NOT AUTOMATICALLY PUBLISH NOTICES
+
+Bulk company/opportunity import must NOT automatically:
+
+* create a public placement notice;
+* send notifications;
+* send emails;
+* notify students.
+
+Importing data is separate from publishing a notice.
+
+Only the authorized notice workflow should publish communications.
+
+This is a critical security/operational safeguard.
+
+---
+
+# 56. DO NOT MODIFY STUDENT DATA
+
+The company import must never accidentally modify:
+
+* student profiles;
+* attendance;
+* performance;
+* placement applications;
+* internship applications;
+* student categories;
+* notifications.
+
+Except through explicitly designed placement relationships.
+
+---
+
+# 57. SECURITY ISOLATION
+
+The new feature must have clear boundaries.
+
+Use a dedicated module/service where appropriate:
+
+```text
+company_import/
+```
+
+or equivalent existing project structure.
+
+Keep import-specific:
+
+* serializers;
+* validators;
+* services;
+* tasks;
+* permissions;
+* API endpoints
+
+isolated from unrelated functionality.
+
+Do not modify global authentication or global API behavior.
+
+---
+
+# 58. BACKWARD COMPATIBILITY
+
+Existing company pages must continue to work.
+
+Verify:
+
+### Company List
+
+Still loads.
+
+### Search
+
+Still works.
+
+### Company Details
+
+Still work.
+
+### Add Company
+
+Still works.
+
+### Edit Company
+
+Still works.
+
+### Placement Company Dropdown
+
+Still works.
+
+### Internship Company Dropdown
+
+Still works.
+
+### Placement Notice
+
+Still works.
+
+### Internship Notice
+
+Still works.
+
+### Staff Pages
+
+Still work.
+
+### Student Pages
+
+Still work.
+
+### Notifications
+
+Still work.
+
+---
+
+# 59. DATABASE MIGRATION SAFETY
+
+If a new model/field is required:
+
+* create Django migration;
+* inspect migration;
+* apply locally;
+* verify existing records;
+* do not drop production columns;
+* do not rename data destructively without a migration strategy.
+
+Do not make unrelated database changes.
+
+---
+
+# 60. API NAMESPACE
+
+Prefer an isolated API namespace such as:
+
+```text
+/api/admin/companies/import/
+```
+
+rather than changing existing company endpoints.
+
+Possible actions:
+
+```text
+POST   /upload
+POST   /validate
+GET    /preview
+PUT    /rows/{row_id}
+POST   /confirm
+GET    /status
+POST   /cancel
+GET    /history
+GET    /report
+```
+
+Reuse equivalent existing routes if already implemented.
+
+---
+
+# 61. ERROR RESPONSE DESIGN
+
+Return structured errors.
+
+Example:
+
+```json
+{
+  "row": 47,
+  "field": "Placement / Internship",
+  "code": "INVALID_CHOICE",
+  "message": "Expected Placement, Internship, or Both."
+}
+```
+
+Do not return raw Python tracebacks.
+
+Do not expose database internals.
+
+---
+
+# 62. LOGGING
+
+Log important server-side events:
+
+```text
+Import uploaded
+Import validation started
+Validation completed
+Import confirmed
+Celery task started
+Import completed
+Import failed
+```
+
+Include:
+
+* import ID;
+* authenticated user ID;
+* timestamp;
+* counts.
+
+Do not log:
+
+* passwords;
+* session cookies;
+* CSRF tokens;
+* secrets;
+* full uploaded file contents.
+
+---
+
+# 63. AUDIT TRAIL
+
+The system should be able to answer:
+
+**Who imported this company?**
+
+**When?**
+
+**From which file?**
+
+**Which records were created/updated?**
+
+**What duplicate policy was used?**
+
+**Did the import succeed?**
+
+Do this through ImportSession/audit data rather than unreliable text logs alone.
+
+---
+
+# 64. PERFORMANCE
+
+Optimize for:
+
+* 500 records;
+* 1000 records;
+* potentially larger files in the future.
+
+Do not:
+
+* send one HTTP request per row;
+* perform one database query per row;
+* perform uncontrolled fuzzy matching against every company;
+* render all 1000 rows simultaneously.
+
+Use:
+
+* batch processing;
+* indexed lookups;
+* bulk database operations;
+* pagination;
+* asynchronous jobs where appropriate.
+
+---
+
+# 65. UX REQUIREMENT
+
+The administrator should always know where they are.
+
+Use a clear progress indicator:
+
+```text
+1 Upload
+2 Map
+3 Validate
+4 Preview
+5 Confirm
+6 Complete
+```
+
+Do not overwhelm the user with technical information.
+
+Show technical details only when an error needs investigation.
+
+---
+
+# 66. CANCEL BEHAVIOR
+
+At any pre-confirmation stage:
+
+```text
+Cancel
+```
+
+should safely discard the temporary import.
+
+No permanent Company/Opportunity records should remain.
+
+After confirmation begins, cancellation behavior must depend on task state.
+
+If the Celery job has already started, display:
+
+**Import is already processing. It cannot be safely cancelled at this stage.**
+
+unless you implement true task cancellation.
+
+---
+
+# 67. BROWSER REFRESH SAFETY
+
+If the administrator refreshes while viewing a preview:
+
+the ImportSession should remain available if it has not expired.
+
+Do not lose all state merely because the browser refreshed.
+
+If the session has expired:
+
+show a clear recovery message.
+
+---
+
+# 68. DOUBLE-CLICK PROTECTION
+
+Disable Confirm Import after the first submission.
+
+Backend must ALSO protect against duplicate confirmation requests.
+
+UI protection alone is not sufficient.
+
+---
+
+# 69. CONCURRENT ADMIN IMPORTS
+
+Two administrators may upload files simultaneously.
+
+The system must isolate:
+
+```text
+ImportSession A
+ImportSession B
+```
+
+and their temporary data.
+
+Neither should overwrite the other.
+
+---
+
+# 70. DATABASE RACE CONDITIONS
+
+At confirmation, another administrator may have imported the same company/opportunity.
+
+Therefore:
+
+**re-check duplicates at commit time.**
+
+Do not rely solely on duplicate detection performed 10 minutes earlier during preview.
+
+---
+
+# 71. SECURITY TEST MATRIX
+
+Test at least:
+
+| Test                                  | Expected           |
+| ------------------------------------- | ------------------ |
+| Unauthenticated upload                | Blocked            |
+| Unauthorized staff upload             | Blocked            |
+| Authorized upload                     | Allowed            |
+| User A accesses User B import ID      | Blocked            |
+| Expired import confirmation           | Blocked            |
+| Already-completed import confirmation | Blocked/idempotent |
+| Modified row from browser             | Revalidated        |
+| Fake file extension                   | Rejected           |
+| Oversized file                        | Rejected           |
+| Malicious formula                     | Sanitized          |
+| XSS-like company name                 | Escaped            |
+| Path traversal filename               | Safe               |
+| Invalid URL                           | Validation error   |
+| Duplicate company                     | Detected           |
+| Concurrent duplicate                  | Database-safe      |
+
+---
+
+# 72. REGRESSION TEST MATRIX
+
+After implementation, verify:
+
+### Admin
+
+* dashboard;
+* company list;
+* company search;
+* add company;
+* edit company;
+* bulk import.
+
+### Staff
+
+* company list;
+* internship company form;
+* placement notice;
+* internship notice;
+* notification;
+* student management.
+
+### Placement Officer
+
+* company selection;
+* placement statistics;
+* placement reports;
+* student placement data.
+
+### Internship Officer
+
+* company selection;
+* internship drives;
+* eligibility.
+
+### Student
+
+* placement information;
+* internship information;
+* notifications.
+
+No existing page should depend on undocumented import-specific fields.
+
+---
+
+# 73. IMPORTANT: SECURITY MUST NOT IMPACT NORMAL PAGE FUNCTIONALITY
+
+The security implementation must be **localized**.
+
+Do not:
+
+* change global CSRF settings;
+* disable browser security;
+* change global CORS to accommodate uploads;
+* alter authentication middleware unnecessarily;
+* modify every API permission;
+* introduce global request restrictions;
+* change global file-upload behavior.
+
+Instead, apply security controls specifically to the import feature.
+
+For example:
+
+```text
+Company Import Permission
+Company Import Validation
+Company Import Upload Limits
+Company Import Session Ownership
+Company Import APIs
+```
+
+This minimizes regression risk.
+
+---
+
+# 74. TEST BEFORE AND AFTER
+
+Before modifications:
+
+run a baseline check for existing company/placement functionality.
+
+After implementation:
+
+run exactly the same tests again.
+
+Compare:
+
+```text
+Before
+vs
+After
+```
+
+No previously working workflow should become broken.
+
+---
+
+# 75. NO PRODUCTION DESTRUCTIVE TESTING
+
+For a live deployment:
+
+Do not:
+
+* delete all companies;
+* update all placement records;
+* upload malicious files;
+* intentionally exhaust memory;
+* submit thousands of huge files;
+* alter real notices;
+* send fake notifications to students.
+
+Use staging/local testing for destructive/security stress tests.
+
+---
+
+# 76. SAMPLE TEST DATA
+
+Create safe development test files:
+
+### Small
+
+10 rows
+
+### Medium
+
+100 rows
+
+### Large
+
+500 rows
+
+### Stress
+
+1000+ rows
+
+Include:
+
+* valid companies;
+* duplicates;
+* missing optional values;
+* invalid rows;
+* multiple opportunities per company;
+* Placement;
+* Internship;
+* Both;
+* multiple batches;
+* multiple departments;
+* different CTC formats.
+
+---
+
+# 77. UNIT TESTS
+
+Create tests for:
+
+* header mapping;
+* normalization;
+* CTC parsing;
+* department parsing;
+* job profile parsing;
+* skill parsing;
+* validation;
+* duplicate detection;
+* fuzzy matching threshold;
+* URL validation;
+* batch normalization;
+* number-of-offers validation.
+
+---
+
+# 78. INTEGRATION TESTS
+
+Test:
+
+```text
+Upload
+→ Parse
+→ Validate
+→ Preview
+→ Confirm
+→ Database
+```
+
+Test successful and failed paths.
+
+---
+
+# 79. API TESTS
+
+Test:
+
+* authentication;
+* authorization;
+* upload;
+* validation;
+* preview;
+* edit;
+* confirm;
+* status;
+* history;
+* report.
+
+---
+
+# 80. UI TESTS
+
+Test:
+
+* file selection;
+* drag/drop;
+* mapping;
+* filters;
+* preview;
+* row expansion;
+* inline edit;
+* confirmation;
+* progress;
+* result;
+* errors.
+
+---
+
+# 81. FINAL DATA MODEL VALIDATION
+
+After import, verify that:
+
+```text
+Company
++
+Opportunity
+```
+
+relationships are correct.
+
+A company with three different opportunities should become:
+
+```text
+Company: TCS
+
+Opportunity 1
+Software Engineer
+2027
+Placement
+7.5 LPA
+
+Opportunity 2
+Data Analyst
+2027
+Placement
+8 LPA
+
+Opportunity 3
+Software Intern
+2027
+Internship
+25k/month
+```
+
+NOT:
+
+```text
+Three separate companies named TCS
+```
+
+unless explicitly intended.
+
+---
+
+# 82. PLACEMENT NOTICE READINESS
+
+After importing an opportunity, verify that the existing Placement Notice workflow can retrieve the correct opportunity without manually re-entering:
+
+* company;
+* batch;
+* designation;
+* eligibility;
+* department;
+* CTC;
+* skills;
+* selection process;
+* website;
+* placement/internship type;
+* offers.
+
+The notice creator should be able to edit the auto-filled values before publishing.
+
+---
+
+# 83. DO NOT AUTO-SEND NOTIFICATIONS
+
+Importing an opportunity should NOT:
+
+* send student notifications;
+* publish notices;
+* send email;
+* mark students as eligible;
+* create placement applications automatically.
+
+Those are separate workflows.
+
+---
+
+# 84. FINAL ACCEPTANCE CRITERIA
+
+The feature is complete only when:
+
+### Functional
+
+* XLSX works.
+* XLS works.
+* CSV works.
+* 36-column template works.
+* Column mapping works.
+* Validation works.
+* Duplicate detection works.
+* Preview works.
+* Inline correction works where supported.
+* Confirmation works.
+* Database import works.
+* Large imports work.
+* Import history works.
+* Error report works.
+
+### Security
+
+* Only authorized users can import.
+* ImportSession ownership is enforced.
+* CSRF remains enabled.
+* Upload validation works.
+* File-size limits work.
+* Malicious file types are rejected.
+* XSS is safely escaped.
+* Spreadsheet formula injection is mitigated.
+* Path traversal is prevented.
+* SSRF is avoided.
+* Duplicate confirmation is protected.
+* Race conditions are handled.
+* Temporary files expire/cleanup correctly.
+
+### Data
+
+* Company master data is separated from opportunities.
+* Multiple opportunities per company are supported.
+* Department eligibility is structured.
+* CTC/emolument is normalized.
+* Placement/Internship/Both is controlled.
+* Job profiles and skills are structured.
+* Existing company records remain intact.
+
+### Regression
+
+* Existing Company pages still work.
+* Staff pages still work.
+* Placement pages still work.
+* Internship pages still work.
+* Notification system still works.
+* Student pages still work.
+* Authentication still works.
+* Existing APIs remain compatible.
+
+---
+
+# 85. FINAL IMPLEMENTATION SEQUENCE
+
+Follow this sequence exactly:
+
+```text
+1. AUDIT EXISTING COMPANY ARCHITECTURE
+        ↓
+2. AUDIT EXISTING PERMISSIONS
+        ↓
+3. MAP 36 EXCEL FIELDS
+        ↓
+4. MAP COMPANY VS OPPORTUNITY DATA
+        ↓
+5. DESIGN IMPORT SESSION
+        ↓
+6. IMPLEMENT SECURE UPLOAD
+        ↓
+7. IMPLEMENT FILE DETECTION
+        ↓
+8. IMPLEMENT COLUMN MAPPING
+        ↓
+9. IMPLEMENT VALIDATION
+        ↓
+10. IMPLEMENT NORMALIZATION
+        ↓
+11. IMPLEMENT DUPLICATE DETECTION
+        ↓
+12. IMPLEMENT PREVIEW
+        ↓
+13. IMPLEMENT INLINE CORRECTION
+        ↓
+14. IMPLEMENT FINAL CONFIRMATION
+        ↓
+15. REVALIDATE ON BACKEND
+        ↓
+16. IMPLEMENT TRANSACTION-SAFE IMPORT
+        ↓
+17. IMPLEMENT CELERY FOR LARGE JOBS
+        ↓
+18. IMPLEMENT PROGRESS
+        ↓
+19. IMPLEMENT RESULT REPORT
+        ↓
+20. IMPLEMENT IMPORT HISTORY
+        ↓
+21. CONNECT OPPORTUNITIES TO EXISTING NOTICE SYSTEM
+        ↓
+22. SECURITY TEST
+        ↓
+23. PERFORMANCE TEST
+        ↓
+24. REGRESSION TEST ALL EXISTING PAGES
+        ↓
+25. FINAL AUDIT
+```
+
+---
+
+# 86. FINAL AGENT REPORT
+
+When finished, do not just say:
+
+**"Implemented successfully."**
+
+Provide:
+
+### Architecture changes
+
+### Files modified
+
+### Models/migrations
+
+### APIs
+
+### Frontend pages/components
+
+### Validation rules
+
+### Duplicate algorithm
+
+### Import flow
+
+### Celery/background processing
+
+### Security controls
+
+### Tests executed
+
+### Regression tests executed
+
+### Bugs found
+
+### Bugs fixed
+
+### Performance results
+
+### Remaining limitations
+
+Most importantly, explicitly confirm:
+
+> **No unrelated application functionality was intentionally changed, and existing authentication, authorization, Student, Staff, Training, Placement, Internship, Notification, and dashboard workflows were regression-tested after implementing the bulk-import feature.**
+
+The final architecture should preserve the core idea from the specification: **a safe, reviewable administrative import workflow where the uploaded 36-column Excel data is transformed into structured Company + Placement/Internship Opportunity data, and only explicitly confirmed, revalidated data is committed to the database.**  
+In the last give me brief summary what chnges have done?
+
+
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-27T11:33:57+05:30.
+
+The user's current state is as follows:
+Other open documents:
+- c:\Users\Mahendra\OneDrive\Desktop\Tnp\TNP\dataimport\management\commands\seed_synthetic_activity.py (LANGUAGE_PYTHON)
+- c:\Users\Mahendra\OneDrive\Desktop\Tnp\TNP\client_app\src\pages\placement_officer\index.tsx (LANGUAGE_TSX)
+- c:\Users\Mahendra\OneDrive\Desktop\Tnp\TNP\placements\services.py (LANGUAGE_PYTHON)
+- c:\Users\Mahendra\OneDrive\Desktop\Tnp\TNP\client_app\src\pages\auth\ResetPassword.tsx (LANGUAGE_TSX)
+- c:\Users\Mahendra\OneDrive\Desktop\Tnp\TNP\client_app\src\pages\auth\passkey.ts (LANGUAGE_TYPESCRIPT)
+</ADDITIONAL_METADATA>

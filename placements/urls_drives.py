@@ -84,4 +84,18 @@ urlpatterns = [
         views.PlacementNoticeDetailView.as_view(),
         name="placement-notice-detail",
     ),
+    # ---------------------------------------------------------------------------
+    # Bulk Company Import endpoints (T-BulkImport)
+    # ---------------------------------------------------------------------------
+    path("bulk-import/template/", views.bulk_views.TemplateDownloadView.as_view(), name="bulk-import-template"),
+    path("bulk-import/upload/", views.bulk_views.UploadAndValidateView.as_view(), name="bulk-import-upload"),
+    path("bulk-import/history/", views.bulk_views.ImportHistoryView.as_view(), name="bulk-import-history"),
+    path("bulk-import/session/<uuid:session_id>/", views.bulk_views.ImportSessionDetailView.as_view(), name="bulk-import-session-detail"),
+    path("bulk-import/session/<uuid:session_id>/preview/", views.bulk_views.ImportSessionPreviewView.as_view(), name="bulk-import-session-preview"),
+    path("bulk-import/session/<uuid:session_id>/row/<int:row_id>/", views.bulk_views.RowCorrectionView.as_view(), name="bulk-import-row-correction"),
+    path("bulk-import/session/<uuid:session_id>/confirm/", views.bulk_views.ConfirmImportView.as_view(), name="bulk-import-session-confirm"),
+    path("bulk-import/session/<uuid:session_id>/status/", views.bulk_views.ImportSessionStatusView.as_view(), name="bulk-import-session-status"),
+    path("bulk-import/session/<uuid:session_id>/cancel/", views.bulk_views.CancelImportSessionView.as_view(), name="bulk-import-session-cancel"),
+    path("placement/opportunities/search/", views.bulk_views.OpportunitySearchView.as_view(), name="placement-opportunity-search"),
 ]
+

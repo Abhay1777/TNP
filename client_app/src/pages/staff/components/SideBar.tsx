@@ -1,6 +1,6 @@
 import { NavLink } from "react-router"; // Import Link for routing
 import "../../placement_officer/components/sidebar.css";
-import { Building2, NotebookPen, Send, Verified } from "lucide-react";
+import { Building2, NotebookPen, Send, Upload, Verified } from "lucide-react";
 import { logout, redirectToProfile } from "@/utils";
 import { SERVER_URL } from "@/constant";
 import Logo from "@/assets/img/logo.png";
@@ -41,6 +41,10 @@ const Sidebar = () => {
         <NavLink to="batch-categorize" className="menu-item gap-3">
           <Verified />
           <p>Student Category</p>
+        </NavLink>
+        <NavLink to="placement_companies/bulk-import" className="menu-item gap-3">
+          <Upload size={18} />
+          <p>Bulk Import Companies</p>
         </NavLink>
         <NavLink to="/notifications/create" className="menu-item gap-3">
           <Send />
