@@ -92,7 +92,7 @@ def placement_import_export_view(request):
                 return HttpResponseRedirect(f"{reverse('admin:placements_placement_import_export')}?tab=import")
 
             try:
-                detected_headers, rows_dict, mapping = parse_uploaded_file(uploaded_file)
+                detected_headers, mapping, rows_dict = parse_uploaded_file(uploaded_file)
             except FileValidationError as e:
                 messages.error(request, f"File format validation error: {e}")
                 return HttpResponseRedirect(f"{reverse('admin:placements_placement_import_export')}?tab=import")
