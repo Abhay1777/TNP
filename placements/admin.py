@@ -101,22 +101,37 @@ def placement_import_export_view(request):
                 messages.error(request, f"Could not read spreadsheet: {e}")
                 return HttpResponseRedirect(f"{reverse('admin:placements_placement_import_export')}?tab=import")
 
+            from datetime import timedelta
+            from django.utils import timezone
+
+            ext = uploaded_file.name.rsplit(".", 1)[-1].lower() if "." in uploaded_file.name else "xlsx"
+            expires_at = timezone.now() + timedelta(hours=SESSION_EXPIRATION_HOURS)
+
             # Create Staging Session
             session = ImportSession.objects.create(
                 uploaded_by=request.user,
                 file_name=uploaded_file.name,
-                detected_headers=detected_headers,
+                file_type=ext,
+                file_size=uploaded_file.size,
                 column_mapping=mapping,
-                status="staging",
+                status="VALIDATING",
+                expires_at=expires_at,
             )
 
             cache = ExistingCompaniesCache()
+            seen_in_batch = set()
             valid_cnt = warning_cnt = duplicate_cnt = error_cnt = 0
             imported_rows = []
 
             for row_idx, raw_data in enumerate(rows_dict, start=1):
-                val_res = validate_row(raw_data, mapping, cache)
-                st = val_res.status.upper()
+                val_res = validate_row(
+                    row_num=row_idx,
+                    raw_data=raw_data,
+                    column_mapping=mapping,
+                    cache=cache,
+                    seen_in_batch=seen_in_batch,
+                )
+                st = val_res["status"]
                 if st == "VALID":
                     valid_cnt += 1
                 elif st == "WARNING":
@@ -130,25 +145,27 @@ def placement_import_export_view(request):
                     ImportedRow(
                         session=session,
                         row_number=row_idx,
+                        source_sr_no=val_res.get("source_sr_no", ""),
                         raw_data=raw_data,
-                        normalized_data=val_res.normalized_data,
+                        normalized_data=val_res["normalized_data"],
                         status=st,
-                        validation_messages=val_res.errors + val_res.warnings,
-                        duplicate_info={"matches": val_res.duplicate_matches} if val_res.duplicate_matches else {},
+                        validation_messages=val_res["validation_messages"],
+                        duplicate_info=val_res["duplicate_info"],
                     )
                 )
 
             ImportedRow.objects.bulk_create(imported_rows, batch_size=500)
+            session.status = "VALIDATED"
             session.total_rows = len(rows_dict)
             session.valid_rows = valid_cnt
             session.warning_rows = warning_cnt
             session.duplicate_rows = duplicate_cnt
             session.error_rows = error_cnt
-            session.save(update_fields=["total_rows", "valid_rows", "warning_rows", "duplicate_rows", "error_rows"])
+            session.save(update_fields=["status", "total_rows", "valid_rows", "warning_rows", "duplicate_rows", "error_rows"])
 
             messages.info(
                 request,
-                f"File '{uploaded_file.name}' processed into staging. {valid_cnt} valid, {warning_cnt} warnings, {duplicate_cnt} duplicates, {error_cnt} errors.",
+                f"File '{uploaded_file.name}' processed: {valid_cnt} valid, {warning_cnt} warnings, {duplicate_cnt} duplicates, {error_cnt} errors.",
             )
             return HttpResponseRedirect(f"{reverse('admin:placements_placement_import_export')}?tab=import&session_id={session.id}")
 
@@ -158,7 +175,7 @@ def placement_import_export_view(request):
             session = get_object_or_404(ImportSession, id=session_id)
 
             try:
-                result = commit_import_session(session, duplicate_policy, request.user)
+                result = commit_import_session(session, duplicate_policy)
                 messages.success(
                     request,
                     f"Import successfully committed! {result['created_companies_count']} companies created, {result['created_opportunities_count']} opportunities created, {result['skipped_count']} duplicates skipped.",
@@ -186,11 +203,12 @@ def placement_import_export_view(request):
     if session_id:
         try:
             s = ImportSession.objects.get(id=session_id)
-            if s.status in ("PARSED", "VALIDATED", "staging"):
+            # If committed=1 is in the URL or DB status is COMPLETED, show success report
+            if request.GET.get("committed") == "1" or s.status == "COMPLETED":
+                committed_session = s
+            elif s.status in ("PARSED", "VALIDATING", "VALIDATED", "staging", "PROCESSING"):
                 staging_session = s
                 preview_rows = s.rows.all().order_by("row_number")[:100]
-            elif s.status == "COMPLETED" or request.GET.get("committed"):
-                committed_session = s
         except ImportSession.DoesNotExist:
             pass
 
