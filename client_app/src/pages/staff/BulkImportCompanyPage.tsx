@@ -141,7 +141,7 @@ const BulkImportCompanyPage: React.FC = () => {
     setIsUploading(true);
 
     const formData = new FormData();
-    formData.append("file", selectedFile);
+    formData.append("file", uploadedFile);
 
     try {
       const res = await apiFetch("/api/staff/bulk-import/upload/", {
@@ -287,7 +287,7 @@ const BulkImportCompanyPage: React.FC = () => {
     try {
       await apiFetch(`/api/staff/bulk-import/session/${session.id}/cancel/`, { method: "POST" });
       setSession(null);
-      setFile(null);
+      setSelectedFile(null);
       setCurrentStep(1);
     } catch (err) {
       console.error(err);
@@ -962,7 +962,7 @@ const BulkImportCompanyPage: React.FC = () => {
               <button
                 onClick={() => {
                   setSession(null);
-                  setFile(null);
+                  setSelectedFile(null);
                   setConfirmResult(null);
                   setCurrentStep(1);
                 }}
