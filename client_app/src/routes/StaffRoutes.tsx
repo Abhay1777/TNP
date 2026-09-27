@@ -12,7 +12,6 @@ import SendPlacementMessage from "../pages/staff/SendPlacementMessage";
 import InternshipCompanyRegister from "../pages/internship_officer/InternshipCompanyRegister";
 import InternShipVerify from "../pages/internship_officer/InternShipVerify";
 import BatchCategorizer from "../pages/staff/update-category-form";
-import BulkImportCompanyPage from "../pages/staff/BulkImportCompanyPage";
 const StaffRoutes = () => {
   return (
     <Route element={<RequireRole allowed={ROLE_GROUPS.PLACEMENT_DRIVE} />}>
@@ -36,7 +35,6 @@ const StaffRoutes = () => {
         <Route path="student-management" element={<StudentManager />} />
         <Route path="internship/verify" element={<InternShipVerify />} />
         <Route path="batch-categorize" element={<BatchCategorizer />} />
-        <Route path="placement_companies/bulk-import" element={<BulkImportCompanyPage />} />
       </Route>
     </Route>
   );

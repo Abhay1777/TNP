@@ -490,7 +490,34 @@ UNFOLD = {
                         "link": reverse_lazy("admin:student_student_changelist"),
                     },
                 ],
-            }
+            },
+            {
+                "title": _("Placement"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Placement (Import & Export)"),
+                        "icon": "sync_alt",
+                        "link": reverse_lazy("admin:placements_placement_import_export"),
+                    },
+                    {
+                        "title": _("Companies"),
+                        "icon": "business",
+                        "link": reverse_lazy("admin:placements_company_changelist"),
+                    },
+                    {
+                        "title": _("Placement Opportunities"),
+                        "icon": "work",
+                        "link": reverse_lazy("admin:placements_placementopportunity_changelist"),
+                    },
+                    {
+                        "title": _("Import Sessions"),
+                        "icon": "history",
+                        "link": reverse_lazy("admin:placements_importsession_changelist"),
+                    },
+                ],
+            },
         ],
     },
 }

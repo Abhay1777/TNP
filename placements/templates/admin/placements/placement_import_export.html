@@ -1,0 +1,434 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Placement (Import & Export) | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-sm flex items-center gap-2">
+    <a href="{% url 'admin:index' %}" class="text-blue-600 dark:text-blue-400 hover:underline">{% translate 'Home' %}</a>
+    <span class="text-gray-400">/</span>
+    <span class="text-gray-500 dark:text-gray-400">{% translate 'Placement' %}</span>
+    <span class="text-gray-400">/</span>
+    <span class="text-gray-800 dark:text-gray-200 font-semibold">{% translate 'Import & Export' %}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <span>Placement — Import & Export</span>
+            </h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Manage college-wide placement opportunities and company master records. Import 36-column Excel/CSV files with automated duplicate validation or export verified data.
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'admin:placements_placement_import_export' %}?action=download_template"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                <span>Download Official Template</span>
+            </a>
+            <a href="{% url 'admin:placements_company_changelist' %}"
+               class="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition-colors">
+                <span>View Company Directory</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="flex space-x-8" aria-label="Tabs">
+            <a href="?tab=import"
+               class="py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors {% if active_tab == 'import' %}border-blue-600 text-blue-600 dark:text-blue-400{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <span>Import Placement Data</span>
+            </a>
+            <a href="?tab=export"
+               class="py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors {% if active_tab == 'export' %}border-blue-600 text-blue-600 dark:text-blue-400{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                <span>Export Placement Data</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: IMPORT PLACEMENT DATA -->
+    <!-- ========================================================================= -->
+    {% if active_tab == 'import' %}
+    <div class="space-y-6">
+
+        {% if committed_session %}
+        <!-- Success Confirmation Card -->
+        <div class="p-6 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-4">
+            <div class="flex items-center gap-3 text-emerald-800 dark:text-emerald-300">
+                <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>
+                    <h3 class="font-bold text-lg">Import Completed Successfully!</h3>
+                    <p class="text-sm">File <strong>{{ committed_session.file_name }}</strong> has been safely committed to the database.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center pt-2">
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900">
+                    <div class="text-xs text-gray-500">Total Rows</div>
+                    <div class="text-xl font-bold text-gray-900 dark:text-white">{{ committed_session.total_rows }}</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900">
+                    <div class="text-xs text-gray-500">Valid Records</div>
+                    <div class="text-xl font-bold text-emerald-600">{{ committed_session.valid_rows }}</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900">
+                    <div class="text-xs text-gray-500">Duplicates Handled</div>
+                    <div class="text-xl font-bold text-purple-600">{{ committed_session.duplicate_rows }}</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900">
+                    <div class="text-xs text-gray-500">Errors</div>
+                    <div class="text-xl font-bold text-gray-400">{{ committed_session.error_rows }}</div>
+                </div>
+            </div>
+            <div class="pt-2 flex gap-3">
+                <a href="?tab=import" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg">Import Another File</a>
+                <a href="{% url 'admin:placements_placementopportunity_changelist' %}" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50">View Placement Opportunities</a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if staging_session %}
+        <!-- Session Preview & Confirmation Section -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 gap-4">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Staging Preview (Zero-Write Mode)</span>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mt-1">Review Parsed Data: {{ staging_session.file_name }}</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">Please review the validation status below before committing to the database.</p>
+                </div>
+                <form method="post" action="{% url 'admin:placements_placement_import_export' %}" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="cancel">
+                    <input type="hidden" name="session_id" value="{{ staging_session.id }}">
+                    <button type="submit" onclick="return confirm('Cancel this session and discard uploaded data?')"
+                            class="px-3.5 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900">
+                        Cancel & Discard
+                    </button>
+                </form>
+            </div>
+
+            <!-- Validation Counters -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+                    <div class="text-xs text-gray-500 font-medium">Total Rows</div>
+                    <div class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ staging_session.total_rows }}</div>
+                </div>
+                <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800 text-center">
+                    <div class="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Valid Records</div>
+                    <div class="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1">{{ staging_session.valid_rows }}</div>
+                </div>
+                <div class="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800 text-center">
+                    <div class="text-xs text-amber-700 dark:text-amber-400 font-medium">Warnings / Duplicates</div>
+                    <div class="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1">{{ staging_session.warning_rows|add:staging_session.duplicate_rows }}</div>
+                </div>
+                <div class="p-4 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800 text-center">
+                    <div class="text-xs text-red-700 dark:text-red-400 font-medium">Errors</div>
+                    <div class="text-2xl font-bold text-red-700 dark:text-red-400 mt-1">{{ staging_session.error_rows }}</div>
+                </div>
+            </div>
+
+            <!-- Preview Table -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-700 dark:text-gray-300">
+                    <thead class="bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 uppercase font-semibold border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                            <th class="py-2.5 px-3">Row #</th>
+                            <th class="py-2.5 px-3">Company Name</th>
+                            <th class="py-2.5 px-3">Batch</th>
+                            <th class="py-2.5 px-3">Designation</th>
+                            <th class="py-2.5 px-3">Type</th>
+                            <th class="py-2.5 px-3">CTC</th>
+                            <th class="py-2.5 px-3">Status</th>
+                            <th class="py-2.5 px-3">Validation Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for row in preview_rows %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <td class="py-2 px-3 font-mono font-medium">{{ row.row_number }}</td>
+                            <td class="py-2 px-3 font-semibold text-gray-900 dark:text-white">{{ row.normalized_data.company_name|default:"-" }}</td>
+                            <td class="py-2 px-3">{{ row.normalized_data.batch|default:"-" }}</td>
+                            <td class="py-2 px-3">{{ row.normalized_data.designation|default:"-" }}</td>
+                            <td class="py-2 px-3">{{ row.normalized_data.placement_internship|default:"-" }}</td>
+                            <td class="py-2 px-3">{{ row.normalized_data.emolument_raw|default:"-" }}</td>
+                            <td class="py-2 px-3">
+                                {% if row.status == 'valid' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Valid</span>
+                                {% elif row.status == 'warning' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">Warning</span>
+                                {% elif row.status == 'duplicate' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">Duplicate</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">Error</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2 px-3 text-gray-500">
+                                {% if row.errors %}
+                                    <span class="text-red-600 font-medium">{{ row.errors|join:", " }}</span>
+                                {% elif row.warnings %}
+                                    <span class="text-amber-600">{{ row.warnings|join:", " }}</span>
+                                {% elif row.duplicate_matches %}
+                                    <span class="text-purple-600">Matches: {{ row.duplicate_matches.0.company_name }}</span>
+                                {% else %}
+                                    <span class="text-emerald-600">Ready for commit</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="py-4 text-center text-gray-500">No rows found in this session.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Commit Form -->
+            <form method="post" action="{% url 'admin:placements_placement_import_export' %}" class="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-lg border border-gray-200 dark:border-gray-700 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="confirm">
+                <input type="hidden" name="session_id" value="{{ staging_session.id }}">
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-900 dark:text-white">Duplicate Handling Policy</label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="duplicate_policy" value="skip" checked class="mt-1 text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="text-sm font-medium text-gray-900 dark:text-white">Skip Duplicates (Recommended)</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Existing company opportunities matching batch and designation will not be overwritten.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="duplicate_policy" value="update" class="mt-1 text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="text-sm font-medium text-gray-900 dark:text-white">Update Existing</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Safely update non-critical details (CTC, skills) without touching student applicant records.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer">
+                            <input type="radio" name="duplicate_policy" value="keep_separate" class="mt-1 text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="text-sm font-medium text-gray-900 dark:text-white">Keep Separate</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Insert all rows as new records even if matching company records exist.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span>Commit & Save {{ staging_session.valid_rows }} Valid Records to Database</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% else %}
+
+        <!-- Upload Form -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-sm max-w-3xl mx-auto space-y-6">
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 mx-auto bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Upload Placement Spreadsheet</h3>
+                <p class="text-sm text-gray-500 max-w-md mx-auto">
+                    Upload your completed 36-column Excel (.xlsx, .xls) or CSV file. All rows are validated and staged for review before any permanent database writes.
+                </p>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" action="{% url 'admin:placements_placement_import_export' %}" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="upload">
+
+                <!-- Drag & Drop Area -->
+                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 rounded-xl p-8 text-center cursor-pointer transition-colors bg-gray-50 dark:bg-gray-900/30">
+                    <input type="file" name="file" id="placement_file" accept=".xlsx,.xls,.csv" required class="hidden" onchange="document.getElementById('file-chosen-text').innerText = this.files[0] ? this.files[0].name : '';">
+                    <label for="placement_file" class="cursor-pointer flex flex-col items-center">
+                        <svg class="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <span class="text-sm font-semibold text-blue-700 dark:text-blue-400">Click to select file or drag and drop</span>
+                        <span class="text-xs text-gray-500 mt-1">Supports .xlsx, .xls, .csv (Up to 15MB)</span>
+                        <span id="file-chosen-text" class="text-xs font-bold text-emerald-600 mt-2"></span>
+                    </label>
+                </div>
+
+                <!-- Info Highlights -->
+                <div class="bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4 text-xs text-blue-900 dark:text-blue-300 space-y-1.5">
+                    <div class="font-semibold flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Zero Database Write Guarantee</span>
+                    </div>
+                    <p class="text-blue-800 dark:text-blue-300/80">
+                        Uploading a file parses headers and validates data against canonical TCET rules. Records will only be written to production tables after your explicit confirmation on the preview screen.
+                    </p>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="submit"
+                            class="w-full sm:w-auto px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-medium text-sm rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
+                        <span>Upload & Validate</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+    </div>
+    {% endif %}
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: EXPORT PLACEMENT DATA -->
+    <!-- ========================================================================= -->
+    {% if active_tab == 'export' %}
+    <div class="space-y-6">
+
+        <!-- Filter Card -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Export Filter Options</h2>
+            <form method="get" action="{% url 'admin:placements_placement_import_export' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <input type="hidden" name="tab" value="export">
+
+                <!-- Batch Filter -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Batch</label>
+                    <select name="batch" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                        <option value="">All Batches</option>
+                        {% for b in available_batches %}
+                            <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Type Filter -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Placement / Internship</label>
+                    <select name="type" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                        <option value="">All Types</option>
+                        <option value="Placement" {% if selected_type == 'Placement' %}selected{% endif %}>Placement</option>
+                        <option value="Internship" {% if selected_type == 'Internship' %}selected{% endif %}>Internship</option>
+                        <option value="Placement & Internship" {% if selected_type == 'Placement & Internship' %}selected{% endif %}>Placement & Internship</option>
+                    </select>
+                </div>
+
+                <!-- Search Query -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Company / Designation</label>
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Filter by name or role..."
+                           class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                </div>
+
+                <!-- Submit Filter -->
+                <div class="flex gap-2">
+                    <button type="submit" class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg">
+                        Apply Filter
+                    </button>
+                    <a href="?tab=export" class="px-3 py-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm flex items-center justify-center">Reset</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Export Summary & Actions -->
+        <div class="bg-blue-50/50 dark:bg-gray-800 border border-blue-200 dark:border-gray-700 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                <h3 class="text-base font-bold text-gray-900 dark:text-white">
+                    Found {{ total_export_count }} Opportunity Records Ready for Export
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">
+                    Exports generate complete 36 canonical columns including 11 department flags, CTC, skillset, and selection process.
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="?tab=export&batch={{ selected_batch }}&type={{ selected_type }}&q={{ search_query }}&action=export_excel"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Export to Excel (.xlsx)</span>
+                </a>
+                <a href="?tab=export&batch={{ selected_batch }}&type={{ selected_type }}&q={{ search_query }}&action=export_csv"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span>Export to CSV (.csv)</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Export Preview Table -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-3.5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase text-gray-500">Preview Data (First 25 matching records)</span>
+                <span class="text-xs text-gray-500">Total: {{ total_export_count }}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-700 dark:text-gray-300">
+                    <thead class="bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 uppercase font-semibold border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                            <th class="py-2.5 px-3">#</th>
+                            <th class="py-2.5 px-3">Company</th>
+                            <th class="py-2.5 px-3">Batch</th>
+                            <th class="py-2.5 px-3">Designation</th>
+                            <th class="py-2.5 px-3">Type</th>
+                            <th class="py-2.5 px-3">CTC</th>
+                            <th class="py-2.5 px-3">Departments</th>
+                            <th class="py-2.5 px-3">Offers</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for opp in export_preview_rows %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <td class="py-2 px-3 font-mono text-gray-500">{{ forloop.counter }}</td>
+                            <td class="py-2 px-3 font-semibold text-gray-900 dark:text-white">{{ opp.company.name }}</td>
+                            <td class="py-2 px-3">{{ opp.batch }}</td>
+                            <td class="py-2 px-3">{{ opp.designation }}</td>
+                            <td class="py-2 px-3">{{ opp.placement_internship }}</td>
+                            <td class="py-2 px-3">{{ opp.emolument_raw|default:"-" }}</td>
+                            <td class="py-2 px-3 max-w-xs truncate">{{ opp.eligible_departments|join:", "|default:"-" }}</td>
+                            <td class="py-2 px-3">{{ opp.no_of_offers|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="py-6 text-center text-gray-500">No placement opportunities found matching your filter criteria.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
