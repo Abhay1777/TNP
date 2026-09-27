@@ -79,18 +79,63 @@ TECH_CHOICES = {
 }
 
 PLACEMENT_INTERNSHIP_CHOICES = {
+    # ── Standard values ──────────────────────────────────────────────────────
     "placement": "Placement",
     "full-time": "Placement",
     "full time": "Placement",
     "job": "Placement",
+    "off-campus": "Placement",
+    "off campus": "Placement",
+    # ── Internship ────────────────────────────────────────────────────────────
     "internship": "Internship",
     "intern": "Internship",
     "summer internship": "Internship",
-    "both": "Both",
+    "ojt": "Internship",
+    "on-job training": "Internship",
+    "on job training": "Internship",
+    # ── TCET-specific AEDP / PLI terms ───────────────────────────────────────
+    # AEDP = Associate Engineer Development Programme (Placement track)
+    "aedp": "Placement",
+    "aedp placement": "Placement",
+    "aedp & placement": "Placement",
+    "aedp &placement": "Placement",
+    "aedp cum placement": "Placement",
+    "aedp and placement": "Placement",
+    # PLI = Pre-placement Internship → leads to Placement offer
+    "pli": "Placement",
+    "pre-placement internship": "Placement",
+    "placement via internship": "Placement",
+    # AEDP Cum PLI = both tracks, treat as Both
+    "aedp cum pli": "Both",
+    "aedp & pli": "Both",
+    "aedp &pli": "Both",
+    "aedp and pli": "Both",
+    # AEDP Cum Internship
+    "aedp cum internship": "Internship",
+    "aedp cum intern": "Internship",
+    # Combined placement + internship
+    "placement & internship": "Both",
+    "placement and internship": "Both",
     "placement + internship": "Both",
     "internship & placement": "Both",
-    "pli": "Placement",
-    "ojt": "Internship",
+    "internship cum placement": "Both",
+    "internship and placement": "Both",
+    "both": "Both",
+    "placement/internship": "Both",
+    "internship/placement": "Both",
+    # International / Pooled / Special
+    "international placement": "Placement",
+    "off campus placement": "Placement",
+    "off-campus placement": "Placement",
+    "pooled campus": "Placement",
+    "pooled campus placement": "Placement",
+    "pli cum placement": "Placement",
+    "pli and international placement": "Placement",
+    "pli & international placement": "Placement",
+    "pli cum international placement": "Placement",
+    # Webinar / info session (not a real placement type, normalize to Placement)
+    "webinar": "Placement",
+    "seminar": "Placement",
 }
 
 # Upload security constraints

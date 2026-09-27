@@ -87,45 +87,85 @@ def verify_zip_safety(file_obj: UploadedFile):
         file_obj.seek(0)
 
 
+def _is_likely_title_row(row_values) -> bool:
+    """Return True if the row looks like a merged-cell title (very few non-empty cells)."""
+    non_empty = sum(1 for v in row_values if v is not None and str(v).strip() != "")
+    return non_empty < 3
+
+
 def auto_map_columns(headers: List[str]) -> Dict[str, str]:
-    """Map detected raw headers to canonical column names."""
+    """Map detected raw headers to canonical column names.
+
+    Normalizes header strings by stripping whitespace and squashing non-alphanumeric
+    characters before matching against canonical names and common synonyms.
+    """
     canonical_lookup = {
         re.sub(r"[^a-zA-Z0-9&]", "", col).lower(): col for col in CANONICAL_COLUMNS
     }
 
+    # Extra synonyms covering real-world TCET Excel variants
+    synonyms = {
+        # Sr. No. variants
+        "srno": "Sr. No.",
+        "srno": "Sr. No.",
+        "sno": "Sr. No.",
+        "serialno": "Sr. No.",
+        # Batch
+        "batch": "Batch",
+        # Company name
+        "company": "Name of the Company",
+        "companyname": "Name of the Company",
+        "nameofthecompany": "Name of the Company",
+        # Eligibility
+        "eligibility": "Eligibility Criteria",
+        "eligibilitycriteria": "Eligibility Criteria",
+        # Designation
+        "role": "Designation",
+        "profile": "Designation",
+        "position": "Designation",
+        "jobrole": "Designation",
+        # CTC
+        "ctc": "Emolument (CTC)",
+        "salary": "Emolument (CTC)",
+        "package": "Emolument (CTC)",
+        "emolumentctc": "Emolument (CTC)",
+        "emolument": "Emolument (CTC)",
+        # Website
+        "website": "Company Website",
+        "url": "Company Website",
+        "companywebsite": "Company Website",
+        # Placement/Internship — many spacing variants in real files
+        "placementinternship": "Placement / Internship",
+        "placementorinternsip": "Placement / Internship",
+        "type": "Placement / Internship",
+        # Offers
+        "offers": "No Of Offers",
+        "noofoffers": "No Of Offers",
+        "numberofoffers": "No Of Offers",
+        # Departments
+        "branches": "Eligible Department",
+        "eligibledepartment": "Eligible Department",
+        "eligibledepartments": "Eligible Department",
+        "department": "Eligible Department",
+        # Selection
+        "process": "Selection Process",
+        "selectionprocess": "Selection Process",
+        # Tech/Non-Tech
+        "technontech": "Tech / Non-Tech",
+        "techornon": "Tech / Non-Tech",
+        "technical": "Tech / Non-Tech",
+    }
+
     mapping = {}
     for raw_header in headers:
-        normalized_raw = re.sub(r"[^a-zA-Z0-9&]", "", str(raw_header)).lower()
+        # Strip all whitespace and non-alphanumeric before lookup
+        normalized_raw = re.sub(r"[^a-zA-Z0-9&]", "", str(raw_header).strip()).lower()
         if normalized_raw in canonical_lookup:
             mapping[raw_header] = canonical_lookup[normalized_raw]
+        elif normalized_raw in synonyms:
+            mapping[raw_header] = synonyms[normalized_raw]
         else:
-            # Common synonyms / fallbacks
-            synonyms = {
-                "srno": "Sr. No.",
-                "sno": "Sr. No.",
-                "company": "Name of the Company",
-                "companyname": "Name of the Company",
-                "eligibility": "Eligibility Criteria",
-                "role": "Designation",
-                "profile": "Designation",
-                "position": "Designation",
-                "ctc": "Emolument (CTC)",
-                "salary": "Emolument (CTC)",
-                "package": "Emolument (CTC)",
-                "website": "Company Website",
-                "url": "Company Website",
-                "type": "Placement / Internship",
-                "placementinternship": "Placement / Internship",
-                "offers": "No Of Offers",
-                "noofoffers": "No Of Offers",
-                "branches": "Eligible Department",
-                "eligibledepartments": "Eligible Department",
-                "process": "Selection Process",
-            }
-            if normalized_raw in synonyms:
-                mapping[raw_header] = synonyms[normalized_raw]
-            else:
-                mapping[raw_header] = raw_header
+            mapping[raw_header] = raw_header
 
     return mapping
 
@@ -141,17 +181,23 @@ def parse_uploaded_file(file_obj: UploadedFile) -> Tuple[List[str], Dict[str, st
         verify_zip_safety(file_obj)
         file_obj.seek(0)
         wb = openpyxl.load_workbook(file_obj, read_only=True, data_only=True)
-        # Select first visible sheet or active
         ws = wb.active
         rows_iter = ws.iter_rows(values_only=True)
-        
-        # Read header row
-        try:
-            raw_headers = next(rows_iter)
-        except StopIteration:
+
+        # Read header row — auto-skip any leading title/merged rows
+        raw_headers = None
+        for candidate_row in rows_iter:
+            if _is_likely_title_row(candidate_row):
+                # This is a title/merged-cell row — skip it
+                continue
+            raw_headers = candidate_row
+            break
+
+        if raw_headers is None:
             raise FileValidationError("The uploaded spreadsheet contains no data or header row.")
 
-        headers = [str(h).strip() if h is not None else f"Column_{i+1}" for i, h in enumerate(raw_headers)]
+        # Strip whitespace from all headers; replace None with positional placeholder
+        headers = [str(h).strip() if h is not None and str(h).strip() else f"Column_{i+1}" for i, h in enumerate(raw_headers)]
 
         row_count = 0
         for row_vals in rows_iter:

@@ -30,18 +30,32 @@ def parse_boolean_flag(val: Any) -> bool:
 def normalize_batch(batch_str: Any) -> Tuple[str, str]:
     """Normalize batch representation while retaining raw value.
 
+    Handles formats like:
+      - '2026'            → '2026'
+      - '2025/2026'       → '2026'  (take the graduating / end year)
+      - 'BE_2026'         → '2026'
+      - '2025-26'         → '2026'  (expand short year suffix)
+
     Returns (batch_normalized, batch_raw).
     """
     if batch_str is None:
         return "", ""
     raw = str(batch_str).strip()
-    # Match standard 4-digit year e.g. 2026, 2027
-    match = re.search(r"\b(20\d{2})\b", raw)
-    if match:
-        normalized = match.group(1)
-    else:
-        normalized = raw
-    return normalized, raw
+
+    # Find ALL 4-digit years in the string; pick the last (graduating year)
+    years = re.findall(r"\b(20\d{2})\b", raw)
+    if years:
+        normalized = years[-1]  # last year = graduating batch
+        return normalized, raw
+
+    # Handle short suffix formats like '2025-26' or '25-26'
+    short_match = re.search(r"\b20(\d{2})[-/](\d{2})\b", raw)
+    if short_match:
+        normalized = "20" + short_match.group(2)
+        return normalized, raw
+
+    # Fall back to raw value if no year pattern found
+    return raw, raw
 
 
 def parse_emolument_ctc(raw_ctc: Any) -> Tuple[Optional[float], str, str]:
@@ -278,15 +292,23 @@ def validate_row(
     normalized["tech_nontech"] = tech_nontech
 
     # 9. Placement / Internship
-    raw_type = str(mapped.get("Placement / Internship", "") or "").strip().lower()
-    placement_internship = PLACEMENT_INTERNSHIP_CHOICES.get(raw_type, "Placement" if not raw_type else "Placement")
-    if raw_type and raw_type not in PLACEMENT_INTERNSHIP_CHOICES:
+    raw_type_original = str(mapped.get("Placement / Internship", "") or "").strip()
+    # Normalize for lookup: lowercase, collapse whitespace, remove extra spaces around /&
+    raw_type = re.sub(r"\s+", " ", raw_type_original).strip().lower()
+    # Also try stripping spaces around punctuation for variants like "AEDP &Placement"
+    raw_type_clean = re.sub(r"\s*([/&])\s*", r" \1 ", raw_type).strip()
+    placement_internship = (
+        PLACEMENT_INTERNSHIP_CHOICES.get(raw_type)
+        or PLACEMENT_INTERNSHIP_CHOICES.get(raw_type_clean)
+        or "Placement"
+    )
+    if raw_type and raw_type not in PLACEMENT_INTERNSHIP_CHOICES and raw_type_clean not in PLACEMENT_INTERNSHIP_CHOICES:
         validation_messages.append({
             "field": "Placement / Internship",
             "code": "NORMALIZED_WARNING",
-            "message": f"Value '{mapped.get('Placement / Internship')}' normalized to '{placement_internship}'.",
+            "message": f"Value '{raw_type_original}' normalized to '{placement_internship}'.",
             "severity": "info",
-            "value": mapped.get("Placement / Internship"),
+            "value": raw_type_original,
         })
     normalized["placement_internship"] = placement_internship
 
