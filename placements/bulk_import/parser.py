@@ -76,7 +76,11 @@ def verify_zip_safety(file_obj: UploadedFile):
         with zipfile.ZipFile(file_obj, "r") as z:
             total_uncompressed = sum(info.file_size for info in z.infolist())
             # If uncompressed size is greater than 100MB or compression ratio > 30x
-            compressed_size = getattr(file_obj, "size", 1) or 1
+            compressed_size = getattr(file_obj, "size", None)
+            if not compressed_size:
+                file_obj.seek(0, 2)
+                compressed_size = file_obj.tell()
+                file_obj.seek(0)
             if total_uncompressed > 100 * 1024 * 1024:
                 raise FileValidationError("Decompressed file size exceeds safe limit (100MB).")
             if total_uncompressed / max(compressed_size, 1) > 40:

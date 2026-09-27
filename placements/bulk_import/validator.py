@@ -248,7 +248,7 @@ def validate_row(
             "severity": "error",
             "value": designation,
         })
-    normalized["designation"] = designation
+    normalized["designation"] = designation[:500]
 
     # 5. Eligibility Criteria
     eligibility_criteria = str(mapped.get("Eligibility Criteria", "") or "").strip()

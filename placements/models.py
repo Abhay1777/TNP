@@ -187,7 +187,7 @@ class PlacementOpportunity(models.Model):
 
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="opportunities")
     batch = models.CharField(max_length=50, db_index=True)
-    designation = models.CharField(max_length=255)
+    designation = models.CharField(max_length=500)
     tech_nontech = models.CharField(max_length=20, choices=TECH_CHOICES, default="Tech")
     placement_internship = models.CharField(max_length=20, choices=TYPE_CHOICES, default="Placement")
     eligibility_criteria = models.TextField(blank=True, default="")
@@ -195,7 +195,7 @@ class PlacementOpportunity(models.Model):
     department_flags = models.JSONField(default=dict, blank=True)
     job_profiles = models.JSONField(default=list, blank=True)
     skills = models.JSONField(default=list, blank=True)
-    emolument_raw = models.CharField(max_length=255, blank=True, default="")
+    emolument_raw = models.TextField(blank=True, default="")
     emolument_value = models.FloatField(null=True, blank=True)
     emolument_unit = models.CharField(max_length=50, blank=True, default="")
     selection_process = models.TextField(blank=True, default="")

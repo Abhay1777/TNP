@@ -176,9 +176,12 @@ def placement_import_export_view(request):
 
             try:
                 result = commit_import_session(session, duplicate_policy)
+                created_c = result.get('created_companies_count', result.get('created_companies', 0))
+                created_o = result.get('created_opportunities_count', result.get('created_opportunities', 0))
+                skipped = result.get('skipped_count', 0)
                 messages.success(
                     request,
-                    f"Import successfully committed! {result['created_companies_count']} companies created, {result['created_opportunities_count']} opportunities created, {result['skipped_count']} duplicates skipped.",
+                    f"Import successfully committed! {created_c} companies created, {created_o} opportunities created, {skipped} duplicates skipped.",
                 )
                 return HttpResponseRedirect(f"{reverse('admin:placements_placement_import_export')}?tab=import&committed=1&session_id={session.id}")
             except CommitImportError as e:

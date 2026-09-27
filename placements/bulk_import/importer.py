@@ -69,9 +69,9 @@ def commit_import_session(
         with transaction.atomic():
             for row in rows_qs:
                 norm = row.normalized_data
-                comp_name = norm.get("company_name", "").strip()
-                batch = norm.get("batch", "").strip()
-                designation = norm.get("designation", "").strip()
+                comp_name = norm.get("company_name", "").strip()[:255]
+                batch = norm.get("batch", "").strip()[:50]
+                designation = norm.get("designation", "").strip()[:500]
 
                 # Skip completely invalid rows missing required keys
                 if not comp_name or not batch or not designation:
@@ -91,7 +91,7 @@ def commit_import_session(
                 if not company:
                     company = Company.objects.create(
                         name=comp_name,
-                        website=norm.get("website", ""),
+                        website=(norm.get("website", "") or "")[:255],
                         description="",
                         aliases=[],
                     )
@@ -99,7 +99,7 @@ def commit_import_session(
                 else:
                     # Update website if missing on master and present in row
                     if not company.website and norm.get("website"):
-                        company.website = norm.get("website")
+                        company.website = (norm.get("website") or "")[:255]
                         company.save(update_fields=["website"])
                         updated_companies += 1
 
@@ -108,22 +108,22 @@ def commit_import_session(
                     company=company,
                     batch=batch,
                     designation__iexact=designation,
-                    placement_internship=norm.get("placement_internship", "Placement"),
+                    placement_internship=(norm.get("placement_internship", "Placement") or "Placement")[:20],
                 )
                 existing_opp = opp_qs.first()
 
                 if existing_opp:
                     if duplicate_policy == "update":
                         # Safe non-destructive update of fields
-                        existing_opp.eligibility_criteria = norm.get("eligibility_criteria", existing_opp.eligibility_criteria)
-                        existing_opp.eligible_departments = norm.get("eligible_departments", existing_opp.eligible_departments)
-                        existing_opp.department_flags = norm.get("department_flags", existing_opp.department_flags)
-                        existing_opp.job_profiles = norm.get("job_profiles", existing_opp.job_profiles)
-                        existing_opp.skills = norm.get("skills", existing_opp.skills)
-                        existing_opp.emolument_raw = norm.get("emolument_raw", existing_opp.emolument_raw)
+                        existing_opp.eligibility_criteria = norm.get("eligibility_criteria", existing_opp.eligibility_criteria) or ""
+                        existing_opp.eligible_departments = norm.get("eligible_departments", existing_opp.eligible_departments) or []
+                        existing_opp.department_flags = norm.get("department_flags", existing_opp.department_flags) or {}
+                        existing_opp.job_profiles = norm.get("job_profiles", existing_opp.job_profiles) or []
+                        existing_opp.skills = norm.get("skills", existing_opp.skills) or []
+                        existing_opp.emolument_raw = norm.get("emolument_raw", existing_opp.emolument_raw) or ""
                         existing_opp.emolument_value = norm.get("emolument_value", existing_opp.emolument_value)
-                        existing_opp.emolument_unit = norm.get("emolument_unit", existing_opp.emolument_unit)
-                        existing_opp.selection_process = norm.get("selection_process", existing_opp.selection_process)
+                        existing_opp.emolument_unit = (norm.get("emolument_unit", existing_opp.emolument_unit) or "")[:50]
+                        existing_opp.selection_process = norm.get("selection_process", existing_opp.selection_process) or ""
                         existing_opp.number_of_offers = norm.get("number_of_offers", existing_opp.number_of_offers)
                         existing_opp.save()
                         updated_opportunities += 1
@@ -132,19 +132,19 @@ def commit_import_session(
                             company=company,
                             batch=batch,
                             designation=designation,
-                            tech_nontech=norm.get("tech_nontech", "Tech"),
-                            placement_internship=norm.get("placement_internship", "Placement"),
-                            eligibility_criteria=norm.get("eligibility_criteria", ""),
-                            eligible_departments=norm.get("eligible_departments", []),
-                            department_flags=norm.get("department_flags", {}),
-                            job_profiles=norm.get("job_profiles", []),
-                            skills=norm.get("skills", []),
-                            emolument_raw=norm.get("emolument_raw", ""),
+                            tech_nontech=(norm.get("tech_nontech", "Tech") or "Tech")[:20],
+                            placement_internship=(norm.get("placement_internship", "Placement") or "Placement")[:20],
+                            eligibility_criteria=norm.get("eligibility_criteria", "") or "",
+                            eligible_departments=norm.get("eligible_departments", []) or [],
+                            department_flags=norm.get("department_flags", {}) or {},
+                            job_profiles=norm.get("job_profiles", []) or [],
+                            skills=norm.get("skills", []) or [],
+                            emolument_raw=norm.get("emolument_raw", "") or "",
                             emolument_value=norm.get("emolument_value"),
-                            emolument_unit=norm.get("emolument_unit", ""),
-                            selection_process=norm.get("selection_process", ""),
+                            emolument_unit=(norm.get("emolument_unit", "") or "")[:50],
+                            selection_process=norm.get("selection_process", "") or "",
                             number_of_offers=norm.get("number_of_offers"),
-                            source_sr_no=row.source_sr_no,
+                            source_sr_no=str(row.source_sr_no or "")[:100],
                         )
                         created_opportunities += 1
                     else:
@@ -160,19 +160,19 @@ def commit_import_session(
                         company=company,
                         batch=batch,
                         designation=designation,
-                        tech_nontech=norm.get("tech_nontech", "Tech"),
-                        placement_internship=norm.get("placement_internship", "Placement"),
-                        eligibility_criteria=norm.get("eligibility_criteria", ""),
-                        eligible_departments=norm.get("eligible_departments", []),
-                        department_flags=norm.get("department_flags", {}),
-                        job_profiles=norm.get("job_profiles", []),
-                        skills=norm.get("skills", []),
-                        emolument_raw=norm.get("emolument_raw", ""),
+                        tech_nontech=(norm.get("tech_nontech", "Tech") or "Tech")[:20],
+                        placement_internship=(norm.get("placement_internship", "Placement") or "Placement")[:20],
+                        eligibility_criteria=norm.get("eligibility_criteria", "") or "",
+                        eligible_departments=norm.get("eligible_departments", []) or [],
+                        department_flags=norm.get("department_flags", {}) or {},
+                        job_profiles=norm.get("job_profiles", []) or [],
+                        skills=norm.get("skills", []) or [],
+                        emolument_raw=norm.get("emolument_raw", "") or "",
                         emolument_value=norm.get("emolument_value"),
-                        emolument_unit=norm.get("emolument_unit", ""),
-                        selection_process=norm.get("selection_process", ""),
+                        emolument_unit=(norm.get("emolument_unit", "") or "")[:50],
+                        selection_process=norm.get("selection_process", "") or "",
                         number_of_offers=norm.get("number_of_offers"),
-                        source_sr_no=row.source_sr_no,
+                        source_sr_no=str(row.source_sr_no or "")[:100],
                         company_registration=legacy_reg,
                     )
                     created_opportunities += 1
@@ -180,8 +180,10 @@ def commit_import_session(
             # 4. Finalize Session Status
             summary = {
                 "created_companies": created_companies,
+                "created_companies_count": created_companies,
                 "updated_companies": updated_companies,
                 "created_opportunities": created_opportunities,
+                "created_opportunities_count": created_opportunities,
                 "updated_opportunities": updated_opportunities,
                 "skipped_count": skipped_count,
                 "error_count": error_count,
