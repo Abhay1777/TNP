@@ -6,8 +6,9 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import path, reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from unfold.admin import ModelAdmin
+from unfold.admin import ModelAdmin, TabularInline
 
 from placements.bulk_import.constants import SESSION_EXPIRATION_HOURS
 from placements.bulk_import.exporter import (
@@ -209,7 +210,7 @@ def placement_import_export_view(request):
             # If committed=1 is in the URL or DB status is COMPLETED, show success report
             if request.GET.get("committed") == "1" or s.status == "COMPLETED":
                 committed_session = s
-            elif s.status in ("PARSED", "VALIDATING", "VALIDATED", "staging", "PROCESSING"):
+            elif s.status in ("PARSED", "VALIDATING", "VALIDATED", "staging", "PROCESSING", "FAILED"):
                 staging_session = s
                 preview_rows = s.rows.all().order_by("row_number")[:100]
         except ImportSession.DoesNotExist:
@@ -286,10 +287,28 @@ class PlacementOpportunityAdmin(ModelAdmin):
     readonly_fields = ("id", "created_at", "updated_at")
 
 
+class ImportedRowInline(TabularInline):
+    model = ImportedRow
+    extra = 0
+    can_delete = False
+    fields = ("row_number", "source_sr_no", "status", "company_display", "designation_display")
+    readonly_fields = ("row_number", "source_sr_no", "status", "company_display", "designation_display")
+
+    def company_display(self, obj):
+        return obj.normalized_data.get("company_name", "-")
+    company_display.short_description = "Company"
+
+    def designation_display(self, obj):
+        return obj.normalized_data.get("designation", "-")
+    designation_display.short_description = "Designation"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(ImportSession)
 class ImportSessionAdmin(ModelAdmin):
     list_display = (
-        "id",
         "file_name",
         "uploaded_by",
         "status",
@@ -299,6 +318,7 @@ class ImportSessionAdmin(ModelAdmin):
         "duplicate_rows",
         "error_rows",
         "created_at",
+        "open_import_ui",
     )
     list_filter = ("status", "created_at")
     search_fields = ("file_name", "uploaded_by__email")
@@ -321,4 +341,41 @@ class ImportSessionAdmin(ModelAdmin):
         "created_at",
         "expires_at",
         "completed_at",
+        "open_import_ui",
     )
+    inlines = [ImportedRowInline]
+
+    def open_import_ui(self, obj):
+        if obj.status == "COMPLETED":
+            url = f"{reverse('admin:placements_placement_import_export')}?tab=import&committed=1&session_id={obj.id}"
+            label = "View Report"
+            color = "#16a34a"
+        else:
+            url = f"{reverse('admin:placements_placement_import_export')}?tab=import&session_id={obj.id}"
+            label = "Open Preview / Commit"
+            color = "#153f74"
+        return format_html(
+            '<a href="{}" style="background-color: {}; color: #ffffff; padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; text-decoration: none; display: inline-block;">{}</a>',
+            url,
+            color,
+            label,
+        )
+    open_import_ui.short_description = "Import Tool"
+
+
+@admin.register(ImportedRow)
+class ImportedRowAdmin(ModelAdmin):
+    list_display = ("row_number", "session", "source_sr_no", "status", "company_display", "designation_display")
+    list_filter = ("status", "session__file_name")
+    search_fields = ("source_sr_no", "session__file_name")
+
+    def company_display(self, obj):
+        return obj.normalized_data.get("company_name", "-")
+    company_display.short_description = "Company"
+
+    def designation_display(self, obj):
+        return obj.normalized_data.get("designation", "-")
+    designation_display.short_description = "Designation"
+
+    def has_add_permission(self, request):
+        return False
