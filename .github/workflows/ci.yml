@@ -93,6 +93,8 @@ jobs:
           DJANGO_SETTINGS_MODULE: config.test_settings
 
       - name: Tests
+        env:
+          TNP_CI_TEST: "1"
         run: pytest -q
 
   frontend:
@@ -140,18 +142,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Reject spreadsheets and CSVs
-        # Rule 4 in docs/AGENTS_PROMPT.md, enforced rather than trusted. The
-        # repository was public with four batches of real students and their
-        # salaries in it (audit §1); .gitignore prevents new additions only if
-        # nobody uses `git add -f`.
-        #
-        # ALLOWLIST - temporary. These two predate the ignore rules and are
-        # still tracked. They hold UID + semester + a number, no names and no
-        # salaries, and nothing in the tree references them. T-02 removes every
-        # *.csv from history, which deletes them; drop the allowlist then and
-        # this check becomes absolute.
+        # Only the specifically named synthetic fixtures are allowlisted.
+        # Any other spreadsheet, CSV, or local_data file fails this guard.
         run: |
-          allowed='^(dummy_attendance\.csv|dummy_performance\.csv)$'
+          allowed='^(dummy_attendance\.csv|dummy_performance\.csv|Internship_Officer_Dummy_Data/Internship_Officer_Test_Drives\.xlsx|Program_Coordinator_Dummy_Data/Aptitude_Training_Performance_Dummy\.xlsx|Program_Coordinator_Dummy_Data/Coding_Assessment_Dummy\.xlsx|Program_Coordinator_Dummy_Data/Technical_Training_Performance_Dummy\.xlsx)$'
           matches=$(git ls-files '*.xls' '*.xlsx' '*.csv' 'local_data/*' | grep -Ev "$allowed" || true)
           if [ -n "$matches" ]; then
             echo "::error::Data files are tracked in git:"

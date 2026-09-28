@@ -72,8 +72,23 @@ urlpatterns = [
     ),
     path("category_update/", views.UpdateStudentCategoryView.as_view(), name="bulk-category-update"),
     # ---------------------------------------------------------------------------
-    # Placement Notice endpoints
+    # Placement Notice Automation endpoints (Staff Workflow)
     # ---------------------------------------------------------------------------
+    path("placement/opportunities/search/", views.notice_views.PlacementOpportunitySearchAPIView.as_view(), name="placement-opportunity-search"),
+    path("placement/opportunities/<int:pk>/autofill/", views.notice_views.PlacementOpportunityAutofillAPIView.as_view(), name="placement-opportunity-autofill"),
+    path("placement-notices/next-serial-number/", views.notice_views.PlacementNoticeNextSerialAPIView.as_view(), name="placement-notice-next-serial"),
+    path("placement-notices/drafts/", views.notice_views.PlacementNoticeDraftListCreateAPIView.as_view(), name="placement-notice-drafts"),
+    path("placement-notices/drafts/<int:pk>/", views.notice_views.PlacementNoticeDraftDetailAPIView.as_view(), name="placement-notice-draft-detail"),
+    path("placement-notices/<int:pk>/publish/", views.notice_views.PlacementNoticePublishAPIView.as_view(), name="placement-notice-publish"),
+    path("placement-notices/", views.notice_views.PlacementNoticeListAPIView.as_view(), name="placement-notice-list"),
+    path("placement-notices/<int:pk>/", views.notice_views.PlacementNoticeDetailAPIView.as_view(), name="placement-notice-detail-v2"),
+    path("placement-notices/<int:pk>/versions/", views.notice_views.PlacementNoticeVersionListAPIView.as_view(), name="placement-notice-versions"),
+    path("placement-notices/<int:pk>/versions/<int:version_number>/", views.notice_views.PlacementNoticeVersionDetailAPIView.as_view(), name="placement-notice-version-detail"),
+    path("placement-notices/<int:pk>/clone/", views.notice_views.PlacementNoticeCloneAPIView.as_view(), name="placement-notice-clone"),
+    path("placement-notices/<int:pk>/audit-logs/", views.notice_views.PlacementNoticeAuditLogsAPIView.as_view(), name="placement-notice-audit-logs"),
+    path("placement-notices/ai-extract/", views.notice_views.PlacementNoticeAIExtractAPIView.as_view(), name="placement-notice-ai-extract"),
+
+    # Legacy notice endpoints (for 100% backwards compatibility)
     path(
         "placement/notice/create/",
         views.PlacementNoticeCreateOrUpdateView.as_view(),
@@ -96,6 +111,5 @@ urlpatterns = [
     path("bulk-import/session/<uuid:session_id>/confirm/", views.bulk_views.ConfirmImportView.as_view(), name="bulk-import-session-confirm"),
     path("bulk-import/session/<uuid:session_id>/status/", views.bulk_views.ImportSessionStatusView.as_view(), name="bulk-import-session-status"),
     path("bulk-import/session/<uuid:session_id>/cancel/", views.bulk_views.CancelImportSessionView.as_view(), name="bulk-import-session-cancel"),
-    path("placement/opportunities/search/", views.bulk_views.OpportunitySearchView.as_view(), name="placement-opportunity-search"),
 ]
 

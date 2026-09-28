@@ -31,6 +31,12 @@ from django.db import models
 class Notice(models.Model):
     """The announcement published for a drive."""
 
+    STATUS_CHOICES = [
+        ("DRAFT", "Draft"),
+        ("PUBLISHED", "Published"),
+        ("ARCHIVED", "Archived"),
+    ]
+
     subject = models.CharField(max_length=255)
     date = models.DateField()
     intro = models.TextField()
@@ -51,6 +57,48 @@ class Notice(models.Model):
     from_field = models.CharField(max_length=255, blank=True, default="")
     from_designation = models.CharField(max_length=255, blank=True, default="")
     notice_type = models.CharField(max_length=50, default="Placement")
+
+    # Workflow, Domain Separation & Version Tracking Fields
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="DRAFT", db_index=True)
+    batch = models.CharField(max_length=50, blank=True, default="")
+    company = models.ForeignKey(
+        "placements.Company",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notices",
+    )
+    opportunity = models.ForeignKey(
+        "placements.PlacementOpportunity",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notices",
+    )
+    version_count = models.PositiveIntegerField(default=1)
+    cloned_from = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="clones",
+    )
+    created_by = models.ForeignKey(
+        "base.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_notices",
+    )
+    updated_by = models.ForeignKey(
+        "base.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_notices",
+    )
+    custom_data = models.JSONField(default=dict, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
@@ -58,7 +106,71 @@ class Notice(models.Model):
         db_table = "staff_notice"
 
     def __str__(self):
-        return f"{self.subject} ({self.notice_type})"
+        return f"{self.subject} ({self.notice_type} - {self.status})"
+
+
+class NoticeVersion(models.Model):
+    """Immutable historical snapshot of a published Placement Notice."""
+
+    notice = models.ForeignKey(Notice, on_delete=models.CASCADE, related_name="versions")
+    version_number = models.PositiveIntegerField()
+    title_or_subject = models.CharField(max_length=255)
+    snapshot = models.JSONField(default=dict)
+    changes_summary = models.JSONField(default=list, blank=True)
+    created_by = models.ForeignKey(
+        "base.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notice_versions",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_current = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "placements_notice_version"
+        unique_together = ("notice", "version_number")
+        ordering = ["-version_number"]
+
+    def __str__(self):
+        return f"Notice #{self.notice_id} v{self.version_number} - {self.title_or_subject}"
+
+
+class NoticeAuditLog(models.Model):
+    """Append-only audit trail for Placement Notice lifecycle events."""
+
+    ACTION_CHOICES = [
+        ("CREATED_DRAFT", "Created Draft"),
+        ("UPDATED_DRAFT", "Updated Draft"),
+        ("PUBLISHED", "Published"),
+        ("UPDATED_VERSION", "Updated Version"),
+        ("CLONED", "Cloned as New Notice"),
+        ("ARCHIVED", "Archived"),
+        ("DELETED_DRAFT", "Deleted Draft"),
+    ]
+
+    notice = models.ForeignKey(Notice, on_delete=models.CASCADE, related_name="audit_logs")
+    action = models.CharField(max_length=50, choices=ACTION_CHOICES)
+    version_number = models.PositiveIntegerField(null=True, blank=True)
+    performed_by = models.ForeignKey(
+        "base.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notice_audit_logs",
+    )
+    performed_by_name = models.CharField(max_length=255, blank=True, default="")
+    performed_by_email = models.CharField(max_length=255, blank=True, default="")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    details = models.JSONField(default=dict, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        db_table = "placements_notice_auditlog"
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"Audit #{self.id} Notice #{self.notice_id}: {self.action} by {self.performed_by_email or 'System'}"
 
 
 class CompanyRegistration(models.Model):

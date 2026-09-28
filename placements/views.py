@@ -36,6 +36,7 @@ from dataimport import sources as historical_sources
 from notifications.models import Notification
 from notifications.serializers import NotificationSerializer
 from placements import services
+from placements import notice_views
 from placements.bulk_import import views as bulk_views
 from placements.models import CategoryRule, CompanyRegistration, Notice
 from placements.pagination import StandardResultsSetPagination as ReportPagination

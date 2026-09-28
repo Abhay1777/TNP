@@ -41,8 +41,11 @@ export interface paths {
          *     deliberate. A missing row is a misconfigured account, and the safe reading
          *     of "no department assigned" is "no students", not "all students".
          *
-         *     Superusers are exempt — they are the only accounts that legitimately read
-         *     across departments.
+         *     Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+         *     exempt — they legitimately read across every department, and neither
+         *     kind of account is expected to carry a `FacultyResponsibility` row, so
+         *     scoping them by one would silently zero out the college-wide dashboards
+         *     they're explicitly permitted to see (docs/PERMISSIONS.md).
          */
         post: operations["department_coordinator_attendance_upload_attendance_create"];
         delete?: never;
@@ -72,8 +75,11 @@ export interface paths {
          *     deliberate. A missing row is a misconfigured account, and the safe reading
          *     of "no department assigned" is "no students", not "all students".
          *
-         *     Superusers are exempt — they are the only accounts that legitimately read
-         *     across departments.
+         *     Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+         *     exempt — they legitimately read across every department, and neither
+         *     kind of account is expected to carry a `FacultyResponsibility` row, so
+         *     scoping them by one would silently zero out the college-wide dashboards
+         *     they're explicitly permitted to see (docs/PERMISSIONS.md).
          */
         post: operations["department_coordinator_attendance_upload_performance_create"];
         delete?: never;
@@ -101,8 +107,11 @@ export interface paths {
          *     deliberate. A missing row is a misconfigured account, and the safe reading
          *     of "no department assigned" is "no students", not "all students".
          *
-         *     Superusers are exempt — they are the only accounts that legitimately read
-         *     across departments.
+         *     Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+         *     exempt — they legitimately read across every department, and neither
+         *     kind of account is expected to carry a `FacultyResponsibility` row, so
+         *     scoping them by one would silently zero out the college-wide dashboards
+         *     they're explicitly permitted to see (docs/PERMISSIONS.md).
          */
         get: operations["department_coordinator_dashboard_summary_retrieve"];
         put?: never;
@@ -132,8 +141,11 @@ export interface paths {
          *     deliberate. A missing row is a misconfigured account, and the safe reading
          *     of "no department assigned" is "no students", not "all students".
          *
-         *     Superusers are exempt — they are the only accounts that legitimately read
-         *     across departments.
+         *     Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+         *     exempt — they legitimately read across every department, and neither
+         *     kind of account is expected to carry a `FacultyResponsibility` row, so
+         *     scoping them by one would silently zero out the college-wide dashboards
+         *     they're explicitly permitted to see (docs/PERMISSIONS.md).
          */
         get: operations["department_coordinator_student_data_list"];
         put?: never;
@@ -290,6 +302,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/internship/job-acceptance/create/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["internship_job_acceptance_create_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/internship/job_acceptance/create/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["internship_job_acceptance_create_create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internship/job_application/create/{id}": {
         parameters: {
             query?: never;
@@ -364,6 +408,40 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["internship_jobs_verify_selected_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/internship/notice/{company_pk}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retrieve the InternshipNotice for the given company. */
+        get: operations["internship_notice_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/internship/notice/create/{company_pk}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Create or update the InternshipNotice for the given company. */
+        post: operations["internship_notice_create_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -676,6 +754,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/placement_officer/report-batches/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Batches that actually have `Student` rows - i.e. batches the report
+         *     dashboards (`placement_dashboard`, branch-wise report, ...) can render
+         *     something for.
+         *
+         *     Deliberately not `CompanyBatchesView`: that endpoint lists
+         *     `CompanyRegistration.batch` values, which a staff member can register a
+         *     drive against before a single student of that batch exists in the
+         *     system, or simply mistype. Every report below queries `Student`, so this
+         *     is the batch list that matches what they can actually show - selecting
+         *     the newest one first (as the dashboards do by default) never lands on an
+         *     empty year.
+         */
+        get: operations["placement_officer_report_batches_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/placement_officer/student_detail_report/{batch}/": {
         parameters: {
             query?: never;
@@ -759,8 +866,11 @@ export interface paths {
          *     deliberate. A missing row is a misconfigured account, and the safe reading
          *     of "no department assigned" is "no students", not "all students".
          *
-         *     Superusers are exempt — they are the only accounts that legitimately read
-         *     across departments.
+         *     Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+         *     exempt — they legitimately read across every department, and neither
+         *     kind of account is expected to carry a `FacultyResponsibility` row, so
+         *     scoping them by one would silently zero out the college-wide dashboards
+         *     they're explicitly permitted to see (docs/PERMISSIONS.md).
          */
         get: operations["program_coordinator_aggregate_analytics_retrieve"];
         put?: never;
@@ -886,8 +996,11 @@ export interface paths {
          *     deliberate. A missing row is a misconfigured account, and the safe reading
          *     of "no department assigned" is "no students", not "all students".
          *
-         *     Superusers are exempt — they are the only accounts that legitimately read
-         *     across departments.
+         *     Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+         *     exempt — they legitimately read across every department, and neither
+         *     kind of account is expected to carry a `FacultyResponsibility` row, so
+         *     scoping them by one would silently zero out the college-wide dashboards
+         *     they're explicitly permitted to see (docs/PERMISSIONS.md).
          */
         get: operations["program_coordinator_student_analytics_list"];
         put?: never;
@@ -917,8 +1030,11 @@ export interface paths {
          *     deliberate. A missing row is a misconfigured account, and the safe reading
          *     of "no department assigned" is "no students", not "all students".
          *
-         *     Superusers are exempt — they are the only accounts that legitimately read
-         *     across departments.
+         *     Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+         *     exempt — they legitimately read across every department, and neither
+         *     kind of account is expected to carry a `FacultyResponsibility` row, so
+         *     scoping them by one would silently zero out the college-wide dashboards
+         *     they're explicitly permitted to see (docs/PERMISSIONS.md).
          */
         get: operations["program_coordinator_student_analytics_retrieve"];
         put?: never;
@@ -971,6 +1087,159 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["program_coordinator_update_attendance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/bulk-import/history/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List historical import sessions with metrics, status, and timestamps. */
+        get: operations["staff_bulk_import_history_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/bulk-import/session/{session_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retrieve details and metrics of an import session. */
+        get: operations["staff_bulk_import_session_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/bulk-import/session/{session_id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cancel a staging import session and clean up its temporary rows. */
+        post: operations["staff_bulk_import_session_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/bulk-import/session/{session_id}/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Revalidate and commit import session to the permanent database safely. */
+        post: operations["staff_bulk_import_session_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/bulk-import/session/{session_id}/preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retrieve paginated staging rows for review, filtering, and search. */
+        get: operations["staff_bulk_import_session_preview_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/bulk-import/session/{session_id}/row/{row_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Inline correction of an individual preview row, immediately re-running row validation. */
+        patch: operations["staff_bulk_import_session_row_partial_update"];
+        trace?: never;
+    };
+    "/api/staff/bulk-import/session/{session_id}/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Poll progress status of an executing or completed import session. */
+        get: operations["staff_bulk_import_session_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/bulk-import/template/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Download official 36-column Excel template with sample rows and guidelines. */
+        get: operations["staff_bulk_import_template_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/bulk-import/upload/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Upload Excel/CSV file, parse, validate, and create temporary staging session with ZERO permanent writes. */
+        post: operations["staff_bulk_import_upload_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1161,6 +1430,200 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/staff/placement-notices/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List published/all placement notices with optional filtering. */
+        get: operations["staff_placement_notices_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement-notices/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retrieve full details of a specific Placement Notice. */
+        get: operations["staff_placement_notices_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement-notices/{id}/audit-logs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retrieve append-only audit trail for a Placement Notice. */
+        get: operations["staff_placement_notices_audit_logs_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement-notices/{id}/clone/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Clone an existing Notice into a new independent Notice Draft. */
+        post: operations["staff_placement_notices_clone_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement-notices/{id}/publish/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Publish a Draft Notice as Version 1 or create Version N+1 for updates. */
+        post: operations["staff_placement_notices_publish_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement-notices/{id}/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List all immutable historical versions and changelogs of a Notice. */
+        get: operations["staff_placement_notices_versions_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement-notices/{id}/versions/{version_number}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retrieve an immutable historical version snapshot of a Notice. */
+        get: operations["staff_placement_notices_versions_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement-notices/ai-extract/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Safely extract structured fields from raw circular/email text.
+         *
+         *     Security: Treated strictly as untrusted input. Direct publishing is prohibited.
+         */
+        post: operations["staff_placement_notices_ai_extract_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement-notices/drafts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List private drafts or create/update a Notice draft. */
+        get: operations["staff_placement_notices_drafts_retrieve"];
+        put?: never;
+        /** @description List private drafts or create/update a Notice draft. */
+        post: operations["staff_placement_notices_drafts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement-notices/drafts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retrieve, update, or delete a specific Notice draft. */
+        get: operations["staff_placement_notices_drafts_retrieve_2"];
+        put?: never;
+        post?: never;
+        /** @description Retrieve, update, or delete a specific Notice draft. */
+        delete: operations["staff_placement_notices_drafts_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Retrieve, update, or delete a specific Notice draft. */
+        patch: operations["staff_placement_notices_drafts_partial_update"];
+        trace?: never;
+    };
+    "/api/staff/placement-notices/next-serial-number/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Fetch the next institutional Placement Notice serial number. */
+        get: operations["staff_placement_notices_next_serial_number_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/staff/placement/companies/batch/{batch}/": {
         parameters: {
             query?: never;
@@ -1184,7 +1647,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["staff_placement_company_list"];
         put?: never;
         post: operations["staff_placement_company_create"];
         delete?: never;
@@ -1220,6 +1683,88 @@ export interface paths {
         put?: never;
         /** @description Notify a drive's eligible or registered students. */
         post: operations["staff_placement_company_send_notifications_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement/notice/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retrieve, update or delete a placement notice by primary key. */
+        get: operations["staff_placement_notice_retrieve"];
+        /** @description Retrieve, update or delete a placement notice by primary key. */
+        put: operations["staff_placement_notice_update"];
+        post?: never;
+        /** @description Retrieve, update or delete a placement notice by primary key. */
+        delete: operations["staff_placement_notice_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Retrieve, update or delete a placement notice by primary key. */
+        patch: operations["staff_placement_notice_partial_update"];
+        trace?: never;
+    };
+    "/api/staff/placement/notice/create/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Create or update a standalone placement notice.
+         *
+         *     POST body mirrors the Notice model fields.  If a notice with the same
+         *     ``subject`` + ``date`` already exists it is updated in-place (idempotent
+         *     for re-submissions); otherwise a new row is inserted.
+         */
+        post: operations["staff_placement_notice_create_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement/opportunities/{id}/autofill/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Fetch autofill default values for a selected Opportunity.
+         *
+         *     Edit Isolation Guarantee: These autofill values populate the notice form
+         *     without mutating the master Company or Opportunity records.
+         */
+        get: operations["staff_placement_opportunities_autofill_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/placement/opportunities/search/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Search opportunities for autofilling Placement Notices. */
+        get: operations["staff_placement_opportunities_search_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1649,8 +2194,7 @@ export interface components {
             gender?: string;
             dob?: string | null;
             contact?: string;
-            /** Format: email */
-            personal_email?: string | null;
+            personal_email?: (string) | null;
             /** Format: double */
             tenth_grade?: number;
             /** Format: double */
@@ -1713,8 +2257,7 @@ export interface components {
             gender?: string;
             dob?: string | null;
             contact?: string;
-            /** Format: email */
-            personal_email?: string | null;
+            personal_email?: (string) | null;
             /** Format: double */
             tenth_grade?: number;
             /** Format: double */
@@ -1816,31 +2359,85 @@ export interface components {
         };
         Notice: {
             readonly id: number;
+            readonly table_data: string;
             subject: string;
             /** Format: date */
             date: string;
             intro: string;
-            about: string;
-            /** Format: uri */
-            company_registration_link: string;
+            about?: string;
+            company_registration_link?: string;
             note?: string | null;
             location: string;
             /** Format: date */
-            deadline: string;
+            deadline?: string | null;
+            sr_no?: string;
+            to?: string;
+            eligibility_criteria?: string;
+            roles?: string;
+            skill_required?: string;
+            documents_to_carry?: string;
+            walk_in_interview?: string;
+            from_field?: string;
+            from_designation?: string;
+            notice_type?: string;
+            status?: components["schemas"]["NoticeStatusEnum"];
+            batch?: string;
+            /** Format: int64 */
+            version_count?: number;
+            custom_data?: unknown;
+            /** Format: date-time */
+            readonly created_at: string | null;
+            /** Format: date-time */
+            readonly updated_at: string | null;
+            company?: number | null;
+            opportunity?: number | null;
+            cloned_from?: number | null;
+            /** Format: uuid */
+            created_by?: string | null;
+            /** Format: uuid */
+            updated_by?: string | null;
         };
         NoticeRequest: {
             subject: string;
             /** Format: date */
             date: string;
             intro: string;
-            about: string;
-            /** Format: uri */
-            company_registration_link: string;
+            about?: string;
+            company_registration_link?: string;
             note?: string | null;
             location: string;
             /** Format: date */
-            deadline: string;
+            deadline?: string | null;
+            sr_no?: string;
+            to?: string;
+            eligibility_criteria?: string;
+            roles?: string;
+            skill_required?: string;
+            documents_to_carry?: string;
+            walk_in_interview?: string;
+            from_field?: string;
+            from_designation?: string;
+            notice_type?: string;
+            status?: components["schemas"]["NoticeStatusEnum"];
+            batch?: string;
+            /** Format: int64 */
+            version_count?: number;
+            custom_data?: unknown;
+            company?: number | null;
+            opportunity?: number | null;
+            cloned_from?: number | null;
+            /** Format: uuid */
+            created_by?: string | null;
+            /** Format: uuid */
+            updated_by?: string | null;
         };
+        /**
+         * @description * `DRAFT` - Draft
+         *     * `PUBLISHED` - Published
+         *     * `ARCHIVED` - Archived
+         * @enum {string}
+         */
+        NoticeStatusEnum: "DRAFT" | "PUBLISHED" | "ARCHIVED";
         /**
          * @description Serializes Notification instances for list and detail views.
          *
@@ -2027,6 +2624,40 @@ export interface components {
             notice?: components["schemas"]["NoticeRequest"];
             job_offers?: components["schemas"]["JobOfferRequest"][];
         };
+        PatchedNoticeRequest: {
+            subject?: string;
+            /** Format: date */
+            date?: string;
+            intro?: string;
+            about?: string;
+            company_registration_link?: string;
+            note?: string | null;
+            location?: string;
+            /** Format: date */
+            deadline?: string | null;
+            sr_no?: string;
+            to?: string;
+            eligibility_criteria?: string;
+            roles?: string;
+            skill_required?: string;
+            documents_to_carry?: string;
+            walk_in_interview?: string;
+            from_field?: string;
+            from_designation?: string;
+            notice_type?: string;
+            status?: components["schemas"]["NoticeStatusEnum"];
+            batch?: string;
+            /** Format: int64 */
+            version_count?: number;
+            custom_data?: unknown;
+            company?: number | null;
+            opportunity?: number | null;
+            cloned_from?: number | null;
+            /** Format: uuid */
+            created_by?: string | null;
+            /** Format: uuid */
+            updated_by?: string | null;
+        };
         PatchedStudentRequest: {
             uid?: string;
             department?: string;
@@ -2037,8 +2668,7 @@ export interface components {
             gender?: string;
             dob?: string | null;
             contact?: string;
-            /** Format: email */
-            personal_email?: string | null;
+            personal_email?: (string) | null;
             /** Format: double */
             tenth_grade?: number;
             /** Format: double */
@@ -2087,14 +2717,6 @@ export interface components {
          * @enum {string}
          */
         SemesterEnum: "Semester 1" | "Semester 2" | "Semester 3" | "Semester 4" | "Semester 5" | "Semester 6" | "Semester 7" | "Semester 8";
-        /**
-         * @description * `offered` - Offered
-         *     * `accepted` - Accepted
-         *     * `rejected` - Rejected
-         *     * `joined` - Joined
-         * @enum {string}
-         */
-        StatusEnum: "offered" | "accepted" | "rejected" | "joined";
         Student: {
             /** Format: uuid */
             readonly id: string;
@@ -2110,8 +2732,7 @@ export interface components {
             gender?: string;
             dob?: string | null;
             contact?: string;
-            /** Format: email */
-            personal_email?: string | null;
+            personal_email?: (string) | null;
             /** Format: double */
             tenth_grade?: number;
             /** Format: double */
@@ -2141,10 +2762,18 @@ export interface components {
             readonly company_name: string;
             readonly job_offer_info: string;
             offer_type?: components["schemas"]["OfferTypeEnum"];
-            status?: components["schemas"]["StatusEnum"];
+            status?: components["schemas"]["StudentOfferStatusEnum"];
             /** Format: double */
             salary: number;
         };
+        /**
+         * @description * `offered` - Offered
+         *     * `accepted` - Accepted
+         *     * `rejected` - Rejected
+         *     * `joined` - Joined
+         * @enum {string}
+         */
+        StudentOfferStatusEnum: "offered" | "accepted" | "rejected" | "joined";
         StudentPlacementAppliedCompany: {
             /** Format: uuid */
             readonly id: string;
@@ -2166,8 +2795,7 @@ export interface components {
             gender?: string;
             dob?: string | null;
             contact?: string;
-            /** Format: email */
-            personal_email?: string | null;
+            personal_email?: (string) | null;
             /** Format: double */
             tenth_grade?: number;
             /** Format: double */
@@ -2493,6 +3121,42 @@ export interface operations {
             };
         };
     };
+    internship_job_acceptance_create_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    internship_job_acceptance_create_create_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     internship_job_application_create_create: {
         parameters: {
             query?: never;
@@ -2572,6 +3236,46 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    internship_notice_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    internship_notice_create_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_pk: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -2963,6 +3667,24 @@ export interface operations {
             };
         };
     };
+    placement_officer_report_batches_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     placement_officer_student_detail_report_retrieve: {
         parameters: {
             query?: never;
@@ -3281,6 +4003,181 @@ export interface operations {
             };
         };
     };
+    staff_bulk_import_history_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_bulk_import_session_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_bulk_import_session_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_bulk_import_session_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_bulk_import_session_preview_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_bulk_import_session_row_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                row_id: number;
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_bulk_import_session_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_bulk_import_template_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_bulk_import_upload_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     staff_category_update_create: {
         parameters: {
             query?: never;
@@ -3491,6 +4388,277 @@ export interface operations {
             };
         };
     };
+    staff_placement_notices_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_audit_logs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_clone_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_publish_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_versions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_versions_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_ai_extract_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_drafts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_drafts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_drafts_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_drafts_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_drafts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notices_next_serial_number_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     staff_placement_companies_batch_list: {
         parameters: {
             query?: {
@@ -3501,6 +4669,28 @@ export interface operations {
             path: {
                 batch: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedFormDataList"];
+                };
+            };
+        };
+    };
+    staff_placement_company_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -3659,6 +4849,157 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Notification"];
                 };
+            };
+        };
+    };
+    staff_placement_notice_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
+            };
+        };
+    };
+    staff_placement_notice_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoticeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["NoticeRequest"];
+                "multipart/form-data": components["schemas"]["NoticeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
+            };
+        };
+    };
+    staff_placement_notice_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_notice_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedNoticeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedNoticeRequest"];
+                "multipart/form-data": components["schemas"]["PatchedNoticeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
+            };
+        };
+    };
+    staff_placement_notice_create_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_opportunities_autofill_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_placement_opportunities_search_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
