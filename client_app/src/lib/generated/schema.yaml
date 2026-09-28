@@ -28,8 +28,11 @@ paths:
         deliberate. A missing row is a misconfigured account, and the safe reading
         of "no department assigned" is "no students", not "all students".
 
-        Superusers are exempt — they are the only accounts that legitimately read
-        across departments.
+        Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+        exempt — they legitimately read across every department, and neither
+        kind of account is expected to carry a `FacultyResponsibility` row, so
+        scoping them by one would silently zero out the college-wide dashboards
+        they're explicitly permitted to see (docs/PERMISSIONS.md).
       tags:
       - department_coordinator
       security:
@@ -52,8 +55,11 @@ paths:
         deliberate. A missing row is a misconfigured account, and the safe reading
         of "no department assigned" is "no students", not "all students".
 
-        Superusers are exempt — they are the only accounts that legitimately read
-        across departments.
+        Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+        exempt — they legitimately read across every department, and neither
+        kind of account is expected to carry a `FacultyResponsibility` row, so
+        scoping them by one would silently zero out the college-wide dashboards
+        they're explicitly permitted to see (docs/PERMISSIONS.md).
       tags:
       - department_coordinator
       security:
@@ -76,8 +82,11 @@ paths:
         deliberate. A missing row is a misconfigured account, and the safe reading
         of "no department assigned" is "no students", not "all students".
 
-        Superusers are exempt — they are the only accounts that legitimately read
-        across departments.
+        Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+        exempt — they legitimately read across every department, and neither
+        kind of account is expected to carry a `FacultyResponsibility` row, so
+        scoping them by one would silently zero out the college-wide dashboards
+        they're explicitly permitted to see (docs/PERMISSIONS.md).
       tags:
       - department_coordinator
       security:
@@ -100,8 +109,11 @@ paths:
         deliberate. A missing row is a misconfigured account, and the safe reading
         of "no department assigned" is "no students", not "all students".
 
-        Superusers are exempt — they are the only accounts that legitimately read
-        across departments.
+        Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+        exempt — they legitimately read across every department, and neither
+        kind of account is expected to carry a `FacultyResponsibility` row, so
+        scoping them by one would silently zero out the college-wide dashboards
+        they're explicitly permitted to see (docs/PERMISSIONS.md).
       parameters:
       - name: page
         required: false
@@ -233,6 +245,28 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/internship/job-acceptance/create/:
+    post:
+      operationId: internship_job_acceptance_create_create
+      tags:
+      - internship
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/internship/job_acceptance/create/:
+    post:
+      operationId: internship_job_acceptance_create_create_2
+      tags:
+      - internship
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/internship/job_application/create/{id}:
     post:
       operationId: internship_job_application_create_create
@@ -283,6 +317,40 @@ paths:
   /api/internship/jobs/verify/selected/:
     post:
       operationId: internship_jobs_verify_selected_create
+      tags:
+      - internship
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/internship/notice/{company_pk}:
+    get:
+      operationId: internship_notice_retrieve
+      description: Retrieve the InternshipNotice for the given company.
+      parameters:
+      - in: path
+        name: company_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - internship
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/internship/notice/create/{company_pk}:
+    post:
+      operationId: internship_notice_create_create
+      description: Create or update the InternshipNotice for the given company.
+      parameters:
+      - in: path
+        name: company_pk
+        schema:
+          type: string
+        required: true
       tags:
       - internship
       security:
@@ -601,6 +669,28 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/placement_officer/report-batches/:
+    get:
+      operationId: placement_officer_report_batches_retrieve
+      description: |-
+        Batches that actually have `Student` rows - i.e. batches the report
+        dashboards (`placement_dashboard`, branch-wise report, ...) can render
+        something for.
+
+        Deliberately not `CompanyBatchesView`: that endpoint lists
+        `CompanyRegistration.batch` values, which a staff member can register a
+        drive against before a single student of that batch exists in the
+        system, or simply mistype. Every report below queries `Student`, so this
+        is the batch list that matches what they can actually show - selecting
+        the newest one first (as the dashboards do by default) never lands on an
+        empty year.
+      tags:
+      - placement_officer
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/placement_officer/student_detail_report/{batch}/:
     get:
       operationId: placement_officer_student_detail_report_retrieve
@@ -679,8 +769,11 @@ paths:
         deliberate. A missing row is a misconfigured account, and the safe reading
         of "no department assigned" is "no students", not "all students".
 
-        Superusers are exempt — they are the only accounts that legitimately read
-        across departments.
+        Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+        exempt — they legitimately read across every department, and neither
+        kind of account is expected to carry a `FacultyResponsibility` row, so
+        scoping them by one would silently zero out the college-wide dashboards
+        they're explicitly permitted to see (docs/PERMISSIONS.md).
       tags:
       - program_coordinator
       security:
@@ -798,8 +891,11 @@ paths:
         deliberate. A missing row is a misconfigured account, and the safe reading
         of "no department assigned" is "no students", not "all students".
 
-        Superusers are exempt — they are the only accounts that legitimately read
-        across departments.
+        Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+        exempt — they legitimately read across every department, and neither
+        kind of account is expected to carry a `FacultyResponsibility` row, so
+        scoping them by one would silently zero out the college-wide dashboards
+        they're explicitly permitted to see (docs/PERMISSIONS.md).
       parameters:
       - name: page
         required: false
@@ -833,8 +929,11 @@ paths:
         deliberate. A missing row is a misconfigured account, and the safe reading
         of "no department assigned" is "no students", not "all students".
 
-        Superusers are exempt — they are the only accounts that legitimately read
-        across departments.
+        Superusers and `COLLEGE_WIDE_ROLES` (principal, training_officer) are
+        exempt — they legitimately read across every department, and neither
+        kind of account is expected to carry a `FacultyResponsibility` row, so
+        scoping them by one would silently zero out the college-wide dashboards
+        they're explicitly permitted to see (docs/PERMISSIONS.md).
       parameters:
       - in: path
         name: id
@@ -899,6 +998,156 @@ paths:
       security:
       - cookieAuth: []
       - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/bulk-import/history/:
+    get:
+      operationId: staff_bulk_import_history_retrieve
+      description: List historical import sessions with metrics, status, and timestamps.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/bulk-import/session/{session_id}/:
+    get:
+      operationId: staff_bulk_import_session_retrieve
+      description: Retrieve details and metrics of an import session.
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/bulk-import/session/{session_id}/cancel/:
+    post:
+      operationId: staff_bulk_import_session_cancel_create
+      description: Cancel a staging import session and clean up its temporary rows.
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/bulk-import/session/{session_id}/confirm/:
+    post:
+      operationId: staff_bulk_import_session_confirm_create
+      description: Revalidate and commit import session to the permanent database
+        safely.
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/bulk-import/session/{session_id}/preview/:
+    get:
+      operationId: staff_bulk_import_session_preview_retrieve
+      description: Retrieve paginated staging rows for review, filtering, and search.
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/bulk-import/session/{session_id}/row/{row_id}/:
+    patch:
+      operationId: staff_bulk_import_session_row_partial_update
+      description: Inline correction of an individual preview row, immediately re-running
+        row validation.
+      parameters:
+      - in: path
+        name: row_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/bulk-import/session/{session_id}/status/:
+    get:
+      operationId: staff_bulk_import_session_status_retrieve
+      description: Poll progress status of an executing or completed import session.
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/bulk-import/template/:
+    get:
+      operationId: staff_bulk_import_template_retrieve
+      description: Download official 36-column Excel template with sample rows and
+        guidelines.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/bulk-import/upload/:
+    post:
+      operationId: staff_bulk_import_upload_create
+      description: Upload Excel/CSV file, parse, validate, and create temporary staging
+        session with ZERO permanent writes.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
       responses:
         '200':
           description: No response body
@@ -1107,6 +1356,219 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/staff/placement-notices/:
+    get:
+      operationId: staff_placement_notices_retrieve
+      description: List published/all placement notices with optional filtering.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement-notices/{id}/:
+    get:
+      operationId: staff_placement_notices_retrieve_2
+      description: Retrieve full details of a specific Placement Notice.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement-notices/{id}/audit-logs/:
+    get:
+      operationId: staff_placement_notices_audit_logs_retrieve
+      description: Retrieve append-only audit trail for a Placement Notice.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement-notices/{id}/clone/:
+    post:
+      operationId: staff_placement_notices_clone_create
+      description: Clone an existing Notice into a new independent Notice Draft.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement-notices/{id}/publish/:
+    post:
+      operationId: staff_placement_notices_publish_create
+      description: Publish a Draft Notice as Version 1 or create Version N+1 for updates.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement-notices/{id}/versions/:
+    get:
+      operationId: staff_placement_notices_versions_retrieve
+      description: List all immutable historical versions and changelogs of a Notice.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement-notices/{id}/versions/{version_number}/:
+    get:
+      operationId: staff_placement_notices_versions_retrieve_2
+      description: Retrieve an immutable historical version snapshot of a Notice.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: version_number
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement-notices/ai-extract/:
+    post:
+      operationId: staff_placement_notices_ai_extract_create
+      description: |-
+        Safely extract structured fields from raw circular/email text.
+
+        Security: Treated strictly as untrusted input. Direct publishing is prohibited.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement-notices/drafts/:
+    get:
+      operationId: staff_placement_notices_drafts_retrieve
+      description: List private drafts or create/update a Notice draft.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: staff_placement_notices_drafts_create
+      description: List private drafts or create/update a Notice draft.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement-notices/drafts/{id}/:
+    get:
+      operationId: staff_placement_notices_drafts_retrieve_2
+      description: Retrieve, update, or delete a specific Notice draft.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: staff_placement_notices_drafts_partial_update
+      description: Retrieve, update, or delete a specific Notice draft.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: staff_placement_notices_drafts_destroy
+      description: Retrieve, update, or delete a specific Notice draft.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/staff/placement-notices/next-serial-number/:
+    get:
+      operationId: staff_placement_notices_next_serial_number_retrieve
+      description: Fetch the next institutional Placement Notice serial number.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/staff/placement/companies/batch/{batch}/:
     get:
       operationId: staff_placement_companies_batch_list
@@ -1134,6 +1596,26 @@ paths:
                 $ref: '#/components/schemas/PaginatedFormDataList'
           description: ''
   /api/staff/placement/company/:
+    get:
+      operationId: staff_placement_company_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFormDataList'
+          description: ''
     post:
       operationId: staff_placement_company_create
       tags:
@@ -1288,6 +1770,154 @@ paths:
               schema:
                 $ref: '#/components/schemas/Notification'
           description: ''
+  /api/staff/placement/notice/{id}/:
+    get:
+      operationId: staff_placement_notice_retrieve
+      description: Retrieve, update or delete a placement notice by primary key.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notice'
+          description: ''
+    put:
+      operationId: staff_placement_notice_update
+      description: Retrieve, update or delete a placement notice by primary key.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NoticeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NoticeRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notice'
+          description: ''
+    patch:
+      operationId: staff_placement_notice_partial_update
+      description: Retrieve, update or delete a placement notice by primary key.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNoticeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedNoticeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedNoticeRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notice'
+          description: ''
+    delete:
+      operationId: staff_placement_notice_destroy
+      description: Retrieve, update or delete a placement notice by primary key.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/staff/placement/notice/create/:
+    post:
+      operationId: staff_placement_notice_create_create
+      description: |-
+        Create or update a standalone placement notice.
+
+        POST body mirrors the Notice model fields.  If a notice with the same
+        ``subject`` + ``date`` already exists it is updated in-place (idempotent
+        for re-submissions); otherwise a new row is inserted.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement/opportunities/{id}/autofill/:
+    get:
+      operationId: staff_placement_opportunities_autofill_retrieve
+      description: |-
+        Fetch autofill default values for a selected Opportunity.
+
+        Edit Isolation Guarantee: These autofill values populate the notice form
+        without mutating the master Company or Opportunity records.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/staff/placement/opportunities/search/:
+    get:
+      operationId: staff_placement_opportunities_search_retrieve
+      description: Search opportunities for autofilling Placement Notices.
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/staff/task-status/{task_id}/:
     get:
       operationId: staff_task_status_retrieve
@@ -1772,10 +2402,13 @@ components:
           type: string
           maxLength: 15
         personal_email:
-          type: string
-          format: email
           nullable: true
-          maxLength: 254
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
         tenth_grade:
           type: number
           format: double
@@ -1898,10 +2531,13 @@ components:
           type: string
           maxLength: 15
         personal_email:
-          type: string
-          format: email
           nullable: true
-          maxLength: 254
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
         tenth_grade:
           type: number
           format: double
@@ -2133,7 +2769,7 @@ components:
           maxLength: 100
         total_hours:
           type: integer
-          maximum: 4294967295
+          maximum: 9223372036854775807
           minimum: 0
           format: int64
         start_date:
@@ -2211,6 +2847,9 @@ components:
         id:
           type: integer
           readOnly: true
+        table_data:
+          type: string
+          readOnly: true
         subject:
           type: string
           maxLength: 255
@@ -2222,9 +2861,12 @@ components:
         about:
           type: string
         company_registration_link:
-          type: string
-          format: uri
-          maxLength: 200
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
         note:
           type: string
           nullable: true
@@ -2234,15 +2876,79 @@ components:
         deadline:
           type: string
           format: date
+          nullable: true
+        sr_no:
+          type: string
+          maxLength: 100
+        to:
+          type: string
+          maxLength: 255
+        eligibility_criteria:
+          type: string
+        roles:
+          type: string
+        skill_required:
+          type: string
+        documents_to_carry:
+          type: string
+        walk_in_interview:
+          type: string
+        from_field:
+          type: string
+          maxLength: 255
+        from_designation:
+          type: string
+          maxLength: 255
+        notice_type:
+          type: string
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/NoticeStatusEnum'
+        batch:
+          type: string
+          maxLength: 50
+        version_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        custom_data: {}
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        company:
+          type: integer
+          nullable: true
+        opportunity:
+          type: integer
+          nullable: true
+        cloned_from:
+          type: integer
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
       required:
-      - about
-      - company_registration_link
+      - created_at
       - date
-      - deadline
       - id
       - intro
       - location
       - subject
+      - table_data
+      - updated_at
     NoticeRequest:
       type: object
       properties:
@@ -2258,12 +2964,13 @@ components:
           minLength: 1
         about:
           type: string
-          minLength: 1
         company_registration_link:
-          type: string
-          format: uri
-          minLength: 1
-          maxLength: 200
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
         note:
           type: string
           nullable: true
@@ -2274,14 +2981,76 @@ components:
         deadline:
           type: string
           format: date
+          nullable: true
+        sr_no:
+          type: string
+          maxLength: 100
+        to:
+          type: string
+          maxLength: 255
+        eligibility_criteria:
+          type: string
+        roles:
+          type: string
+        skill_required:
+          type: string
+        documents_to_carry:
+          type: string
+        walk_in_interview:
+          type: string
+        from_field:
+          type: string
+          maxLength: 255
+        from_designation:
+          type: string
+          maxLength: 255
+        notice_type:
+          type: string
+          minLength: 1
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/NoticeStatusEnum'
+        batch:
+          type: string
+          maxLength: 50
+        version_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        custom_data: {}
+        company:
+          type: integer
+          nullable: true
+        opportunity:
+          type: integer
+          nullable: true
+        cloned_from:
+          type: integer
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
       required:
-      - about
-      - company_registration_link
       - date
-      - deadline
       - intro
       - location
       - subject
+    NoticeStatusEnum:
+      enum:
+      - DRAFT
+      - PUBLISHED
+      - ARCHIVED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `PUBLISHED` - Published
+        * `ARCHIVED` - Archived
     Notification:
       type: object
       description: |-
@@ -2605,6 +3374,93 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JobOfferRequest'
+    PatchedNoticeRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 255
+        date:
+          type: string
+          format: date
+        intro:
+          type: string
+          minLength: 1
+        about:
+          type: string
+        company_registration_link:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        note:
+          type: string
+          nullable: true
+        location:
+          type: string
+          minLength: 1
+          maxLength: 255
+        deadline:
+          type: string
+          format: date
+          nullable: true
+        sr_no:
+          type: string
+          maxLength: 100
+        to:
+          type: string
+          maxLength: 255
+        eligibility_criteria:
+          type: string
+        roles:
+          type: string
+        skill_required:
+          type: string
+        documents_to_carry:
+          type: string
+        walk_in_interview:
+          type: string
+        from_field:
+          type: string
+          maxLength: 255
+        from_designation:
+          type: string
+          maxLength: 255
+        notice_type:
+          type: string
+          minLength: 1
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/NoticeStatusEnum'
+        batch:
+          type: string
+          maxLength: 50
+        version_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        custom_data: {}
+        company:
+          type: integer
+          nullable: true
+        opportunity:
+          type: integer
+          nullable: true
+        cloned_from:
+          type: integer
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
     PatchedStudentRequest:
       type: object
       properties:
@@ -2641,10 +3497,13 @@ components:
           minLength: 1
           maxLength: 15
         personal_email:
-          type: string
-          format: email
           nullable: true
-          maxLength: 254
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
         tenth_grade:
           type: number
           format: double
@@ -2731,18 +3590,6 @@ components:
         * `Semester 6` - Semester 6
         * `Semester 7` - Semester 8
         * `Semester 8` - Semester 8
-    StatusEnum:
-      enum:
-      - offered
-      - accepted
-      - rejected
-      - joined
-      type: string
-      description: |-
-        * `offered` - Offered
-        * `accepted` - Accepted
-        * `rejected` - Rejected
-        * `joined` - Joined
     Student:
       type: object
       properties:
@@ -2791,10 +3638,13 @@ components:
           type: string
           maxLength: 15
         personal_email:
-          type: string
-          format: email
           nullable: true
-          maxLength: 254
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
         tenth_grade:
           type: number
           format: double
@@ -2875,7 +3725,7 @@ components:
         offer_type:
           $ref: '#/components/schemas/OfferTypeEnum'
         status:
-          $ref: '#/components/schemas/StatusEnum'
+          $ref: '#/components/schemas/StudentOfferStatusEnum'
         salary:
           type: number
           format: double
@@ -2884,6 +3734,18 @@ components:
       - id
       - job_offer_info
       - salary
+    StudentOfferStatusEnum:
+      enum:
+      - offered
+      - accepted
+      - rejected
+      - joined
+      type: string
+      description: |-
+        * `offered` - Offered
+        * `accepted` - Accepted
+        * `rejected` - Rejected
+        * `joined` - Joined
     StudentPlacementAppliedCompany:
       type: object
       properties:
@@ -2952,10 +3814,13 @@ components:
           minLength: 1
           maxLength: 15
         personal_email:
-          type: string
-          format: email
           nullable: true
-          maxLength: 254
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
         tenth_grade:
           type: number
           format: double

@@ -1,9 +1,9 @@
-"""Remove the deterministic demo records seeded by migration 0014 in CI only.
+"""Remove the deterministic demo records seeded by migration 0014 in test contexts.
 
 The historical migration is retained for existing installations. The test database
 must be hermetic: migration 0014 creates demo students and 725 attendance rows,
-which contaminate tests that expect an empty database. This cleanup is gated by
-TNP_CI_TEST and therefore never runs in normal development or production.
+which contaminate tests that expect an empty database. This cleanup runs when
+TNP_CI_TEST=1 (CI) or DJANGO_SETTINGS_MODULE contains 'test_settings' (local pytest).
 """
 import os
 
@@ -22,7 +22,9 @@ DEMO_UIDS = [
 
 
 def remove_ci_demo_records(apps, schema_editor):
-    if os.environ.get("TNP_CI_TEST") != "1":
+    is_ci = os.environ.get("TNP_CI_TEST") == "1"
+    is_test = "test_settings" in os.environ.get("DJANGO_SETTINGS_MODULE", "")
+    if not (is_ci or is_test):
         return
 
     db = schema_editor.connection.alias
