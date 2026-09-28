@@ -153,7 +153,15 @@ jobs:
         # *.csv from history, which deletes them; drop the allowlist then and
         # this check becomes absolute.
         run: |
-          allowed='^(dummy_attendance\.csv|dummy_performance\.csv)$'
+          allowed='^(dummy_attendance\\.csv|dummy_performance\\.csv|Internship_Officer_Dummy_Data/Internship_Officer_Test_Drives\\.xlsx|Program_Coordinator_Dummy_Data/Aptitude_Training_Performance_Dummy\\.xlsx|Program_Coordinator_Dummy_Data/Coding_Assessment_Dummy\\.xlsx|Program_Coordinator_Dummy_Data/Technical_Training_Performance_Dummy\\.xlsx)
+          matches=$(git ls-files '*.xls' '*.xlsx' '*.csv' 'local_data/*' | grep -Ev "$allowed" || true)
+          if [ -n "$matches" ]; then
+            echo "::error::Data files are tracked in git:"
+            echo "$matches"
+            exit 1
+          fi
+          echo "No tracked spreadsheets or CSVs beyond the documented allowlist."
+
           matches=$(git ls-files '*.xls' '*.xlsx' '*.csv' 'local_data/*' | grep -Ev "$allowed" || true)
           if [ -n "$matches" ]; then
             echo "::error::Data files are tracked in git:"
