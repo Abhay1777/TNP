@@ -52,7 +52,7 @@ def build_row_data(index: int, opp: PlacementOpportunity) -> dict:
         **skill_dict,
         "Emolument (CTC)": emolument or "",
         "Selection Process": opp.selection_process or "",
-        "Company Website": opp.website or (company.website if company else ""),
+        "Company Website": (company.website if company else ""),
         "Placement / Internship": opp.placement_internship or "",
         "Eligible Department": ", ".join(departments),
         "No Of Offers": opp.number_of_offers or "",
@@ -66,7 +66,12 @@ def export_opportunities_to_csv(queryset) -> io.StringIO:
     writer = csv.DictWriter(output, fieldnames=CANONICAL_COLUMNS)
     writer.writeheader()
 
-    for idx, opp in enumerate(queryset.select_related("company").order_by("-batch", "company__name"), start=1):
+    # Apply select_related; only reorder if the queryset has not already been sliced
+    qs = queryset.select_related("company")
+    if not qs.query.is_sliced:
+        qs = qs.order_by("-batch", "company__name")
+
+    for idx, opp in enumerate(qs, start=1):
         writer.writerow(build_row_data(idx, opp))
 
     output.seek(0)
@@ -103,7 +108,12 @@ def export_opportunities_to_excel(queryset) -> io.BytesIO:
     ws.row_dimensions[1].height = 28
 
     # Write Data Rows
-    for idx, opp in enumerate(queryset.select_related("company").order_by("-batch", "company__name"), start=1):
+    # Apply select_related; only reorder if the queryset has not already been sliced
+    qs = queryset.select_related("company")
+    if not qs.query.is_sliced:
+        qs = qs.order_by("-batch", "company__name")
+
+    for idx, opp in enumerate(qs, start=1):
         row_dict = build_row_data(idx, opp)
         row_values = [row_dict.get(col, "") for col in CANONICAL_COLUMNS]
         ws.append(row_values)
