@@ -168,7 +168,7 @@ const PlacementNotice: React.FC = () => {
         eligibility_criteria: auto.eligibility_criteria || "",
         Documents_to_Carry: auto.documents_to_carry || "1. Updated Resume (2 copies)\n2. College ID Card & Government ID\n3. Marksheets (10th, 12th/Diploma, All semesters)\n4. Passport size photographs (2 copies)",
         Walk_in_interview: auto.walk_in_interview || "Online Assessment followed by Technical and HR Interviews.",
-        Company_registration_Link: auto.company_registration_link || "",
+        Company_registration_Link: auto.company_registration_link || opp.company_website || "",
         College_registration_Link: "",
         Note: auto.note || "Students must report on time in formal attire. Late entries will not be permitted.",
         From: auto.from_field || "Dr. Zahir Aalam",
@@ -1105,7 +1105,7 @@ const PlacementNotice: React.FC = () => {
             boxSizing: "border-box",
           }}
         >
-          <Box sx={{ width: "100%", maxWidth: "860px" }}>
+          <Box sx={{ width: "100%", maxWidth: "960px" }}>
             <Notice formData={livePreviewData} ref={contentRef} isPlacement={true} />
           </Box>
         </Box>

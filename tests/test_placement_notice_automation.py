@@ -183,6 +183,7 @@ class TestPlacementNoticeAutomation:
         assert data["table_data"][0]["salary"] == "₹7.5 LPA"
         assert data["table_data"][0]["position"] == "Software Engineer"
         assert data["sr_no"].startswith("TCET/T&P/OFF/")
+        assert data["company_registration_link"] == sample_company.website
 
     def test_edit_isolation_guarantee(self, staff_user, sample_opportunity, sample_company):
         """CRITICAL: Editing notice fields MUST NOT mutate Company or Opportunity records."""

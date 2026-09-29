@@ -397,7 +397,7 @@ def get_opportunity_autofill_data(opportunity_id: int) -> Dict[str, Any]:
         "skill_required": skills_str,
         "documents_to_carry": "1. Updated Resume (2 copies)\n2. College ID Card & Government ID\n3. Marksheets (10th, 12th/Diploma, All semesters)\n4. Passport size photographs (2 copies)",
         "walk_in_interview": opp.selection_process or "Online Assessment followed by Technical and HR Interviews.",
-        "company_registration_link": "",
+        "company_registration_link": company.website or "",
         "note": "Students must report on time in formal attire. Late entries will not be permitted.",
         "from_field": "Dr. Zahir Aalam",
         "from_designation": "Dean (TP&IL)",
