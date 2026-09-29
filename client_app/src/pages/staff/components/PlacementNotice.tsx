@@ -32,7 +32,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   RotateCcw,
-  Building2,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { getCookie } from "../../../utils";
@@ -146,8 +145,10 @@ const PlacementNotice: React.FC = () => {
 
   // --- Opportunity Selection Handler ---
   const handleSelectOpportunity = async (opp: OpportunityItem) => {
-    if (isDirty && !window.confirm("Switching opportunity will replace notice draft content. Do you want to continue?")) {
-      return;
+    if (isDirty && selectedOpportunity && selectedOpportunity.id !== opp.id) {
+      if (!window.confirm("Switching opportunity will replace notice draft content. Do you want to continue?")) {
+        return;
+      }
     }
 
     setSelectedOpportunity(opp);
@@ -198,6 +199,18 @@ const PlacementNotice: React.FC = () => {
 
   const handleClearOpportunity = () => {
     setSelectedOpportunity(null);
+    setFormData((prev) => ({
+      ...prev,
+      subject: "",
+      intro: "",
+      about: "",
+      eligibility_criteria: "",
+      Company_registration_Link: "",
+      batch: "",
+    }));
+    setTableRows([emptyRow()]);
+    setSkillTags([]);
+    setIsDirty(true);
   };
 
   // --- Load an Existing Notice or Draft ---
@@ -625,52 +638,14 @@ const PlacementNotice: React.FC = () => {
       {/* Step 1: Intelligent Opportunity Search */}
       <OpportunitySearchCard
         onSelectOpportunity={handleSelectOpportunity}
+        selectedOpportunity={selectedOpportunity}
         selectedOppId={selectedOpportunity?.id}
         onClearSelection={handleClearOpportunity}
       />
 
-      {/* Selected Opportunity Highlight Banner */}
-      {selectedOpportunity && (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            mb: 3,
-            borderRadius: 2.5,
-            bgcolor: "#eff6ff",
-            border: "1px solid #bfdbfe",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Building2 size={22} color="#1d4ed8" />
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e3a8a" }}>
-                Active Opportunity Source: {selectedOpportunity.company_name} — {selectedOpportunity.designation} (Batch {selectedOpportunity.batch})
-              </Typography>
-              <Typography variant="caption" sx={{ color: "#3b82f6" }}>
-                Compensation: {selectedOpportunity.emolument_display} • Type: {selectedOpportunity.placement_internship} • Tech: {selectedOpportunity.tech_nontech}
-              </Typography>
-            </Box>
-          </Box>
-          <Chip
-            label="Edit Isolation Active: Changes will not mutate Company master"
-            size="small"
-            sx={{ bgcolor: "#dbeafe", color: "#1e40af", fontWeight: 600, fontSize: "11px" }}
-          />
-        </Paper>
-      )}
-
-      {/* Main Form + Live Preview Grid */}
-      <Grid container spacing={3}>
-        {/* Left Column: Form Editor */}
-        <Grid item xs={12} lg={7}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e2e8f0", bgcolor: "#ffffff" }}>
-            {/* Form Section A: Communication Meta */}
+      {/* Step 2: Placement Notice Form Editor */}
+      <Paper elevation={0} sx={{ p: { xs: 2, sm: 3, md: 3.5 }, mb: 4, borderRadius: 3, border: "1px solid #e2e8f0", bgcolor: "#ffffff", width: "100%", boxSizing: "border-box" }}>
+        {/* Form Section A: Communication Meta */}
             <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b", mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
               <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#3b82f6" }} />
               Communication & Institutional Meta
@@ -1060,61 +1035,81 @@ const PlacementNotice: React.FC = () => {
                 Print / Save PDF
               </Button>
             </Box>
-          </Paper>
-        </Grid>
+      </Paper>
 
-        {/* Right Column: Live Document Preview */}
-        <Grid item xs={12} lg={5}>
-          <Box sx={{ position: "sticky", top: 20 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                mb: 2,
-                borderRadius: 2.5,
-                bgcolor: "#ffffff",
-                border: "1px solid #e2e8f0",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b" }}>
-                  Live Institutional Preview
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                variant="contained"
-                startIcon={<Printer size={14} />}
-                onClick={() => reactPrintFn()}
-                sx={{ textTransform: "none", fontSize: "12px", borderRadius: 1.5 }}
-              >
-                Print Preview
-              </Button>
-            </Paper>
-
-            {/* Document Render Container with official TCET letterhead styling */}
+      {/* Step 3: Live Institutional Document Preview (at the bottom) */}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 4,
+          borderRadius: 3,
+          border: "1px solid #cbd5e1",
+          overflow: "hidden",
+          bgcolor: "#ffffff",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Preview Section Header */}
+        <Box
+          sx={{
+            p: 2.5,
+            borderBottom: "1px solid #e2e8f0",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 2,
+            bgcolor: "#fafbfd",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <Box
               sx={{
-                maxHeight: "calc(100vh - 160px)",
-                overflow: "auto",
-                borderRadius: 3,
-                border: "1px solid #cbd5e1",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.06)",
-                bgcolor: "#525659",
-                p: { xs: 1, sm: 2 },
-                maxWidth: "100%",
-                boxSizing: "border-box",
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                bgcolor: "#22c55e",
+                boxShadow: "0 0 0 4px rgba(34, 197, 94, 0.2)",
               }}
-            >
-              <Notice formData={livePreviewData} ref={contentRef} isPlacement={true} />
+            />
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#0f172a" }}>
+                Live Institutional Preview
+              </Typography>
+              <Typography variant="caption" sx={{ color: "#64748b" }}>
+                Official TCET institutional notice document • Updates live as you edit
+              </Typography>
             </Box>
           </Box>
-        </Grid>
-      </Grid>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Printer size={16} />}
+            onClick={() => reactPrintFn()}
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, px: 2.5 }}
+          >
+            Print Preview
+          </Button>
+        </Box>
+
+        {/* Wide Document Canvas Viewer */}
+        <Box
+          sx={{
+            bgcolor: "#525659",
+            p: { xs: 1.5, sm: 3, md: 4 },
+            display: "flex",
+            justifyContent: "center",
+            overflowX: "auto",
+            minHeight: 500,
+            boxSizing: "border-box",
+          }}
+        >
+          <Box sx={{ width: "100%", maxWidth: "860px" }}>
+            <Notice formData={livePreviewData} ref={contentRef} isPlacement={true} />
+          </Box>
+        </Box>
+      </Paper>
 
       {/* Auxiliary Modals */}
       <NoticeVersionHistoryModal
