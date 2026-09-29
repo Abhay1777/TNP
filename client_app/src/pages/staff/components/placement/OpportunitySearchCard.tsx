@@ -12,8 +12,14 @@ import {
   FormControl,
   InputLabel,
   Button,
+  Alert,
 } from "@mui/material";
-import { Search as SearchIcon, Building2, Briefcase, IndianRupee, GraduationCap, Sparkles, X } from "lucide-react";
+import {
+  Search as SearchIcon,
+  Building2,
+  X,
+  RotateCcw,
+} from "lucide-react";
 import { api } from "@/lib/api";
 
 export interface OpportunityItem {
@@ -53,28 +59,48 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
   const [typeFilter, setTypeFilter] = useState<string>("All");
   const [results, setResults] = useState<OpportunityItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const fetchOpportunities = useCallback(async (query: string, batch: string, type: string) => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = {};
-      if (query.trim()) params.q = query.trim();
-      if (batch) params.batch = batch;
-      if (type !== "All") params.type = type;
+  const fetchOpportunities = useCallback(
+    async (query: string, batch: string, type: string) => {
+      const q = query.trim();
+      const b = batch.trim();
+      const t = type !== "All" ? type.trim() : "";
 
-      const res = await api.get("/api/staff/placement/opportunities/search/", { params });
-      setResults(res.data || []);
-      setHasSearched(true);
-    } catch (err) {
-      console.error("Error searching placement opportunities:", err);
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      // Empty search guard: do not fetch without any keyword or filter
+      if (!q && !b && !t) {
+        setResults([]);
+        setHasSearched(false);
+        setSearchError(null);
+        setLoading(false);
+        return;
+      }
 
-  // Debounced search trigger
+      setLoading(true);
+      setSearchError(null);
+      try {
+        const params: Record<string, string> = {};
+        if (q) params.q = q;
+        if (b) params.batch = b;
+        if (t) params.type = t;
+
+        const res = await api.get("/api/staff/placement/opportunities/search/", { params });
+        setResults(res.data || []);
+        setHasSearched(true);
+      } catch (err) {
+        console.error("Error searching placement opportunities:", err);
+        setSearchError("Unable to search placement opportunities.");
+        setResults([]);
+        setHasSearched(true);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Debounced search trigger (300ms)
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchOpportunities(searchQuery, selectedBatch, typeFilter);
@@ -82,39 +108,60 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery, selectedBatch, typeFilter, fetchOpportunities]);
 
+  const handleRetry = () => {
+    fetchOpportunities(searchQuery, selectedBatch, typeFilter);
+  };
+
+  const handleClearInput = () => {
+    setSearchQuery("");
+  };
+
   return (
     <Paper
       elevation={0}
       sx={{
-        p: 2.5,
+        p: { xs: 2, sm: 2.5 },
         mb: 3,
         borderRadius: 3,
         border: "1px solid #e2e8f0",
-        background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+        bgcolor: "#ffffff",
+        width: "100%",
+        boxSizing: "border-box",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1.5,
+          mb: 2,
+        }}
+      >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <Box
             sx={{
-              width: 38,
-              height: 38,
+              width: 36,
+              height: 36,
               borderRadius: "10px",
-              background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+              bgcolor: "#eff6ff",
+              border: "1px solid #bfdbfe",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#fff",
+              color: "#2563eb",
             }}
           >
-            <Sparkles size={20} />
+            <SearchIcon size={18} />
           </Box>
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.2 }}>
-              Intelligent Opportunity Search & Auto-Fill
+              Search Company or Placement Opportunity
             </Typography>
             <Typography variant="caption" sx={{ color: "#64748b" }}>
-              Search company, role, skills, or batch to instantly auto-populate notice fields with edit isolation
+              Search company, role, skill, batch to select and auto-fill notice details
             </Typography>
           </Box>
         </Box>
@@ -126,21 +173,30 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
             color="secondary"
             startIcon={<X size={14} />}
             onClick={onClearSelection}
-            sx={{ textTransform: "none", borderRadius: 2 }}
+            sx={{ textTransform: "none", borderRadius: 2, fontSize: "12px" }}
           >
-            Clear Selected Opportunity
+            Clear Selected
           </Button>
         )}
       </Box>
 
-      {/* Search Filters Row */}
-      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center", mb: 2 }}>
+      {/* Search Input & Quick Filters Row */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1.5,
+          flexWrap: "wrap",
+          alignItems: "center",
+          mb: 2,
+          width: "100%",
+        }}
+      >
         <TextField
           size="small"
-          placeholder="Search by company (e.g. TCS), role, skill (e.g. Python), batch..."
+          placeholder="Search company, role, skill, batch (e.g. TCS, Software, Java, 2027)..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ flex: 1, minWidth: 280 }}
+          sx={{ flex: 1, minWidth: { xs: "100%", sm: 280 } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -149,7 +205,12 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
             ),
             endAdornment: searchQuery ? (
               <InputAdornment position="end">
-                <Button size="small" onClick={() => setSearchQuery("")} sx={{ minWidth: "auto", p: 0.5 }}>
+                <Button
+                  size="small"
+                  onClick={handleClearInput}
+                  sx={{ minWidth: "auto", p: 0.5, color: "#94a3b8" }}
+                  aria-label="Clear search"
+                >
                   <X size={14} />
                 </Button>
               </InputAdornment>
@@ -157,10 +218,10 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
           }}
         />
 
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel id="batch-select-label">Batch</InputLabel>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel id="batch-filter-label">Batch</InputLabel>
           <Select
-            labelId="batch-select-label"
+            labelId="batch-filter-label"
             value={selectedBatch}
             label="Batch"
             onChange={(e) => setSelectedBatch(e.target.value)}
@@ -174,10 +235,10 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
           </Select>
         </FormControl>
 
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel id="type-select-label">Type</InputLabel>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel id="type-filter-label">Type</InputLabel>
           <Select
-            labelId="type-select-label"
+            labelId="type-filter-label"
             value={typeFilter}
             label="Type"
             onChange={(e) => setTypeFilter(e.target.value)}
@@ -189,43 +250,113 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
         </FormControl>
       </Box>
 
-      {/* Results Section */}
-      <Box sx={{ minHeight: loading ? 100 : results.length > 0 ? "auto" : 40 }}>
+      {/* Results & Status Section */}
+      <Box sx={{ width: "100%", boxSizing: "border-box" }}>
         {loading ? (
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", py: 3, gap: 1.5 }}>
-            <CircularProgress size={22} />
+            <CircularProgress size={20} />
             <Typography variant="body2" sx={{ color: "#64748b" }}>
               Searching placement opportunities...
             </Typography>
           </Box>
+        ) : searchError ? (
+          <Alert
+            severity="error"
+            action={
+              <Button color="inherit" size="small" startIcon={<RotateCcw size={14} />} onClick={handleRetry}>
+                Retry
+              </Button>
+            }
+            sx={{ borderRadius: 2 }}
+          >
+            {searchError}
+          </Alert>
         ) : results.length > 0 ? (
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1.5, maxHeight: 320, overflowY: "auto", pr: 0.5 }}>
-            {results.map((opp) => {
-              const isSelected = selectedOppId === opp.id;
-              return (
-                <Paper
-                  key={opp.id}
-                  elevation={0}
-                  onClick={() => onSelectOpportunity(opp)}
-                  sx={{
-                    p: 2,
-                    borderRadius: 2.5,
-                    border: isSelected ? "2px solid #2563eb" : "1px solid #e2e8f0",
-                    background: isSelected ? "#eff6ff" : "#ffffff",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    "&:hover": {
-                      borderColor: isSelected ? "#1d4ed8" : "#94a3b8",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                      transform: "translateY(-1px)",
-                    },
-                  }}
-                >
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1 }}>
-                    <Box>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Building2 size={16} color="#3b82f6" />
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b" }}>
+          <Box sx={{ width: "100%" }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b", display: "block", mb: 1 }}>
+              Search Results ({results.length})
+            </Typography>
+
+            {/* Compact Search Results List */}
+            <Box
+              sx={{
+                maxHeight: 280,
+                overflowY: "auto",
+                overflowX: "hidden",
+                border: "1px solid #e2e8f0",
+                borderRadius: 2,
+                bgcolor: "#ffffff",
+                divideY: "1px solid #f1f5f9",
+              }}
+            >
+              {results.map((opp) => {
+                const isSelected = selectedOppId === opp.id;
+
+                // Build secondary meta string (e.g. "Software Engineer • 2027 • Placement")
+                const metaParts: string[] = [];
+                if (opp.designation && opp.designation !== "Role not specified") {
+                  metaParts.push(opp.designation);
+                }
+                if (opp.batch) {
+                  metaParts.push(opp.batch);
+                }
+                if (opp.placement_internship) {
+                  metaParts.push(opp.placement_internship);
+                }
+                const metaLine = metaParts.join(" • ");
+
+                const ctc =
+                  opp.emolument_display && opp.emolument_display !== "Not specified"
+                    ? opp.emolument_display
+                    : null;
+
+                const depts =
+                  opp.eligible_departments && opp.eligible_departments.length > 0
+                    ? `Eligible: ${opp.eligible_departments.slice(0, 4).join(", ")}${
+                        opp.eligible_departments.length > 4 ? ` +${opp.eligible_departments.length - 4}` : ""
+                      }`
+                    : null;
+
+                const skillsText =
+                  opp.skills && opp.skills.length > 0
+                    ? `Skills: ${opp.skills.slice(0, 3).join(", ")}`
+                    : null;
+
+                return (
+                  <Box
+                    key={opp.id}
+                    onClick={() => onSelectOpportunity(opp)}
+                    sx={{
+                      p: 1.5,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 2,
+                      cursor: "pointer",
+                      borderLeft: isSelected ? "4px solid #2563eb" : "4px solid transparent",
+                      bgcolor: isSelected ? "#eff6ff" : "#ffffff",
+                      transition: "all 0.15s ease",
+                      borderBottom: "1px solid #f1f5f9",
+                      "&:hover": {
+                        bgcolor: isSelected ? "#dbeafe" : "#f8fafc",
+                      },
+                      "&:last-child": {
+                        borderBottom: "none",
+                      },
+                    }}
+                  >
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      {/* Line 1: Company Name + Aliases */}
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 0.3 }}>
+                        <Building2 size={16} color="#2563eb" style={{ flexShrink: 0 }} />
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 700,
+                            color: "#0f172a",
+                            fontSize: "14px",
+                          }}
+                        >
                           {opp.company_name}
                         </Typography>
                         {opp.company_aliases && opp.company_aliases.length > 0 && (
@@ -236,63 +367,118 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
                           />
                         )}
                       </Box>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
-                        <Briefcase size={14} color="#64748b" />
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: "#334155" }}>
-                          {opp.designation}
+
+                      {/* Line 2: Role • Batch • Type */}
+                      {metaLine && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#475569",
+                            fontSize: "13px",
+                            fontWeight: 500,
+                            mb: 0.3,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {metaLine}
                         </Typography>
+                      )}
+
+                      {/* Line 3: Compensation • Eligible Branches / Skills */}
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+                        {ctc && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "#059669",
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              bgcolor: "#ecfdf5",
+                              px: 0.8,
+                              py: 0.2,
+                              borderRadius: 1,
+                            }}
+                          >
+                            {ctc}
+                          </Typography>
+                        )}
+                        {depts && (
+                          <Typography variant="caption" sx={{ color: "#64748b", fontSize: "12px" }}>
+                            {depts}
+                          </Typography>
+                        )}
+                        {!depts && skillsText && (
+                          <Typography variant="caption" sx={{ color: "#64748b", fontSize: "12px" }}>
+                            {skillsText}
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
 
+                    {/* Action Button */}
                     <Button
                       size="small"
                       variant={isSelected ? "contained" : "outlined"}
                       color="primary"
-                      sx={{ textTransform: "none", fontSize: "12px", py: 0.3, px: 1.5, borderRadius: 1.5 }}
+                      sx={{
+                        textTransform: "none",
+                        fontSize: "12px",
+                        py: 0.4,
+                        px: 1.5,
+                        borderRadius: 1.5,
+                        flexShrink: 0,
+                      }}
                     >
-                      {isSelected ? "Selected" : "Auto-Fill"}
+                      {isSelected ? "Selected" : "Select"}
                     </Button>
                   </Box>
-
-                  {/* Badges & Meta */}
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8, mt: 1 }}>
-                    <Chip
-                      icon={<GraduationCap size={12} />}
-                      label={`Batch ${opp.batch}`}
-                      size="small"
-                      sx={{ height: 22, fontSize: "11px", bgcolor: "#f8fafc", color: "#475569" }}
-                    />
-                    <Chip
-                      icon={<IndianRupee size={12} />}
-                      label={opp.emolument_display}
-                      size="small"
-                      sx={{ height: 22, fontSize: "11px", bgcolor: "#ecfdf5", color: "#065f46", fontWeight: 600 }}
-                    />
-                    <Chip
-                      label={opp.tech_nontech}
-                      size="small"
-                      sx={{ height: 22, fontSize: "11px", bgcolor: opp.tech_nontech === "Tech" ? "#eff6ff" : "#fef3c7", color: opp.tech_nontech === "Tech" ? "#1d4ed8" : "#92400e" }}
-                    />
-                  </Box>
-
-                  {/* Branches */}
-                  {opp.eligible_departments && opp.eligible_departments.length > 0 && (
-                    <Typography variant="caption" sx={{ display: "block", color: "#64748b", mt: 1, fontSize: "11px" }}>
-                      <strong>Eligible:</strong> {opp.eligible_departments.slice(0, 5).join(", ")}
-                      {opp.eligible_departments.length > 5 ? ` +${opp.eligible_departments.length - 5} more` : ""}
-                    </Typography>
-                  )}
-                </Paper>
-              );
-            })}
+                );
+              })}
+            </Box>
           </Box>
         ) : hasSearched ? (
-          <Box sx={{ textAlign: "center", py: 2.5, bgcolor: "#f8fafc", borderRadius: 2, border: "1px dashed #cbd5e1" }}>
-            <Typography variant="body2" sx={{ color: "#64748b" }}>
-              No placement opportunities found matching your criteria.
+          <Box
+            sx={{
+              textAlign: "center",
+              py: 2.5,
+              px: 2,
+              bgcolor: "#f8fafc",
+              borderRadius: 2,
+              border: "1px dashed #cbd5e1",
+            }}
+          >
+            <Typography variant="body2" sx={{ color: "#475569", fontWeight: 500 }}>
+              No matching companies or placement opportunities found.
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#94a3b8", display: "block", mt: 0.5 }}>
+              Try searching by company name, role, skill, or batch.
             </Typography>
           </Box>
-        ) : null}
+        ) : (
+          <Box
+            sx={{
+              py: 2,
+              px: 2,
+              bgcolor: "#f8fafc",
+              borderRadius: 2,
+              border: "1px dashed #e2e8f0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 1,
+            }}
+          >
+            <Typography variant="body2" sx={{ color: "#64748b", fontSize: "13px" }}>
+              Search for a company or placement opportunity to auto-fill the notice details.
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+              Try: TCS • Software • Java • Batch 2027
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Paper>
   );
