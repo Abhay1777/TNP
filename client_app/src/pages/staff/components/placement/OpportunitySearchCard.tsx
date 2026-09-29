@@ -61,6 +61,8 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  // Show search panel expanded only when no opportunity is selected, or user clicks "Change"
+  const [searchExpanded, setSearchExpanded] = useState(true);
 
   const fetchOpportunities = useCallback(
     async (query: string, batch: string, type: string) => {
@@ -116,6 +118,62 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
     setSearchQuery("");
   };
 
+  // When a selection is made, collapse the search panel
+  const handleSelect = (opp: OpportunityItem) => {
+    onSelectOpportunity(opp);
+    setSearchExpanded(false);
+    setResults([]);
+    setHasSearched(false);
+    setSearchQuery("");
+    setSelectedBatch("");
+    setTypeFilter("All");
+  };
+
+  // Expand search to allow changing the selection
+  const handleChangeOpportunity = () => {
+    setSearchExpanded(true);
+    if (onClearSelection) onClearSelection();
+  };
+
+  // If opportunity is selected and search is collapsed → show minimal chip
+  if (selectedOppId && !searchExpanded) {
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 1.5, sm: 2 },
+          mb: 3,
+          borderRadius: 3,
+          border: "1px solid #e2e8f0",
+          bgcolor: "#f8fafc",
+          width: "100%",
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 2,
+          flexWrap: "wrap",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <SearchIcon size={16} color="#64748b" />
+          <Typography variant="body2" sx={{ color: "#475569", fontWeight: 500 }}>
+            Opportunity selected. Notice fields have been auto-filled.
+          </Typography>
+        </Box>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<RotateCcw size={14} />}
+          onClick={handleChangeOpportunity}
+          sx={{ textTransform: "none", borderRadius: 2, fontSize: "12px" }}
+        >
+          Change Opportunity
+        </Button>
+      </Paper>
+    );
+  }
+
   return (
     <Paper
       elevation={0}
@@ -161,23 +219,10 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
               Search Company or Placement Opportunity
             </Typography>
             <Typography variant="caption" sx={{ color: "#64748b" }}>
-              Search company, role, skill, batch to select and auto-fill notice details
+              Search company, role, skill, or batch to auto-fill notice details
             </Typography>
           </Box>
         </Box>
-
-        {selectedOppId && onClearSelection && (
-          <Button
-            size="small"
-            variant="outlined"
-            color="secondary"
-            startIcon={<X size={14} />}
-            onClick={onClearSelection}
-            sx={{ textTransform: "none", borderRadius: 2, fontSize: "12px" }}
-          >
-            Clear Selected
-          </Button>
-        )}
       </Box>
 
       {/* Search Input & Quick Filters Row */}
@@ -325,7 +370,7 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
                 return (
                   <Box
                     key={opp.id}
-                    onClick={() => onSelectOpportunity(opp)}
+                    onClick={() => handleSelect(opp)}
                     sx={{
                       p: 1.5,
                       display: "flex",
