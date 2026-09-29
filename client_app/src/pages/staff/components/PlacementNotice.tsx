@@ -20,7 +20,6 @@ import {
   CircularProgress,
 } from "@mui/material";
 import {
-  Sparkles,
   Save,
   Send,
   Copy,
@@ -46,7 +45,6 @@ import OpportunitySearchCard, { OpportunityItem } from "./placement/OpportunityS
 import NoticeVersionHistoryModal from "./placement/NoticeVersionHistoryModal";
 import NoticeAuditLogsModal from "./placement/NoticeAuditLogsModal";
 import SavedDraftsModal from "./placement/SavedDraftsModal";
-import AIExtractModal from "./placement/AIExtractModal";
 
 const emptyRow = (): NoticeTableRow => ({ type: "Regular", salary: "", position: "" });
 
@@ -91,7 +89,6 @@ const PlacementNotice: React.FC = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [draftsOpen, setDraftsOpen] = useState(false);
-  const [aiModalOpen, setAiModalOpen] = useState(false);
 
   // Printing & Live Preview Ref
   const contentRef = useRef<HTMLDivElement>(null);
@@ -159,32 +156,35 @@ const PlacementNotice: React.FC = () => {
       const res = await api.get(`/api/staff/placement/opportunities/${opp.id}/autofill/`);
       const auto = res.data;
 
-      setFormData((prev) => ({
-        ...prev,
-        srNo: auto.sr_no || prev.srNo,
-        date: auto.date || prev.date,
-        to: auto.to || prev.to,
-        subject: auto.subject || prev.subject,
-        intro: auto.intro || prev.intro,
-        about: auto.about || prev.about,
-        eligibility_criteria: auto.eligibility_criteria || prev.eligibility_criteria,
-        Documents_to_Carry: auto.documents_to_carry || prev.Documents_to_Carry,
-        Walk_in_interview: auto.walk_in_interview || prev.Walk_in_interview,
+      // Cleanly replace previously auto-filled values without leaking prior company data
+      setFormData({
+        srNo: auto.sr_no || "",
+        date: auto.date || new Date().toISOString().split("T")[0],
+        to: auto.to || "",
+        subject: auto.subject || "",
+        intro: auto.intro || "",
+        about: auto.about || "",
+        eligibility_criteria: auto.eligibility_criteria || "",
+        Documents_to_Carry: auto.documents_to_carry || "1. Updated Resume (2 copies)\n2. College ID Card & Government ID\n3. Marksheets (10th, 12th/Diploma, All semesters)\n4. Passport size photographs (2 copies)",
+        Walk_in_interview: auto.walk_in_interview || "Online Assessment followed by Technical and HR Interviews.",
         Company_registration_Link: auto.company_registration_link || "",
-        Note: auto.note || prev.Note,
-        From: auto.from_field || prev.From,
-        From_designation: auto.from_designation || prev.From_designation,
-        location: auto.location || prev.location,
-        batch: auto.batch || opp.batch,
-      }));
+        College_registration_Link: "",
+        Note: auto.note || "Students must report on time in formal attire. Late entries will not be permitted.",
+        From: auto.from_field || "Dr. Zahir Aalam",
+        From_designation: auto.from_designation || "Dean (TP&IL)",
+        location: auto.location || "TCET Campus / Online",
+        deadline: "",
+        batch: auto.batch || opp.batch || "",
+      });
 
-      if (auto.table_data && auto.table_data.length > 0) {
-        setTableRows(auto.table_data);
-      }
+      setTableRows(auto.table_data && auto.table_data.length > 0 ? auto.table_data : [emptyRow()]);
 
-      if (opp.skills && opp.skills.length > 0) {
-        setSkillTags(opp.skills);
-      }
+      const skills = opp.skills && opp.skills.length > 0
+        ? opp.skills
+        : auto.skill_required
+        ? auto.skill_required.split(",").map((s: string) => s.trim()).filter(Boolean)
+        : [];
+      setSkillTags(skills);
 
       setIsDirty(true);
       toast.success(`Auto-filled notice details for ${opp.company_name} (${opp.designation})!`);
@@ -246,26 +246,6 @@ const PlacementNotice: React.FC = () => {
       toast.error("Failed to load notice details.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // --- AI Extracted Data Applier ---
-  const handleApplyAIData = (data: Record<string, any>) => {
-    setIsDirty(true);
-    setFormData((prev) => ({
-      ...prev,
-      eligibility_criteria: data.eligibility_criteria || prev.eligibility_criteria,
-      Company_registration_Link: data.company_registration_link || prev.Company_registration_Link,
-      Walk_in_interview: data.selection_process || prev.Walk_in_interview,
-      about: data.about || prev.about,
-    }));
-
-    if (data.table_data && data.table_data.length > 0) {
-      setTableRows(data.table_data);
-    }
-    if (data.skill_required) {
-      const skills = data.skill_required.split(",").map((s: string) => s.trim()).filter(Boolean);
-      setSkillTags(skills);
     }
   };
 
@@ -536,7 +516,7 @@ const PlacementNotice: React.FC = () => {
   }, [formData, tableRows, skillTags]);
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="xl" sx={{ py: 3, px: { xs: 1, sm: 2, md: 3 }, width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
       {/* Top Workspace Header & Actions Bar */}
       <Paper
         elevation={0}
@@ -629,17 +609,6 @@ const PlacementNotice: React.FC = () => {
               </Button>
             </>
           )}
-
-          <Button
-            size="small"
-            variant="outlined"
-            color="info"
-            startIcon={<Sparkles size={16} />}
-            onClick={() => setAiModalOpen(true)}
-            sx={{ textTransform: "none", borderRadius: 2 }}
-          >
-            AI Circular Extract
-          </Button>
 
           <Button
             size="small"
@@ -1131,12 +1100,14 @@ const PlacementNotice: React.FC = () => {
             <Box
               sx={{
                 maxHeight: "calc(100vh - 160px)",
-                overflowY: "auto",
+                overflow: "auto",
                 borderRadius: 3,
                 border: "1px solid #cbd5e1",
                 boxShadow: "0 10px 25px rgba(0,0,0,0.06)",
                 bgcolor: "#525659",
-                p: 2,
+                p: { xs: 1, sm: 2 },
+                maxWidth: "100%",
+                boxSizing: "border-box",
               }}
             >
               <Notice formData={livePreviewData} ref={contentRef} isPlacement={true} />
@@ -1189,12 +1160,6 @@ const PlacementNotice: React.FC = () => {
         onClose={() => setDraftsOpen(false)}
         onSelectDraft={(id) => loadNoticeById(id)}
         onNewNotice={handleResetNewNotice}
-      />
-
-      <AIExtractModal
-        open={aiModalOpen}
-        onClose={() => setAiModalOpen(false)}
-        onApplyExtractedData={handleApplyAIData}
       />
     </Container>
   );

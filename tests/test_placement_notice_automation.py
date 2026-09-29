@@ -106,12 +106,60 @@ class TestPlacementNoticeAutomation:
         assert data[0]["designation"] == "Software Engineer"
         assert data[0]["batch"] == "2027"
 
-        # 2. Multi-term search (Company + Role + Batch)
-        res2 = client.get(reverse("placement-opportunity-search"), {"q": "tcs software 2027"})
-        assert res2.status_code == status.HTTP_200_OK
-        assert len(res2.json()) == 1
+        # 2. Partial company name ("tata", "consult")
+        res_tata = client.get(reverse("placement-opportunity-search"), {"q": "tata"})
+        assert res_tata.status_code == status.HTTP_200_OK
+        assert len(res_tata.json()) >= 1
+        assert res_tata.json()[0]["company_name"] == sample_company.name
 
-        # 3. Empty state search
+        res_consult = client.get(reverse("placement-opportunity-search"), {"q": "consult"})
+        assert res_consult.status_code == status.HTTP_200_OK
+        assert len(res_consult.json()) >= 1
+        assert res_consult.json()[0]["company_name"] == sample_company.name
+
+        # 3. Role / Designation search ("software", "engineer")
+        res_role = client.get(reverse("placement-opportunity-search"), {"q": "software"})
+        assert res_role.status_code == status.HTTP_200_OK
+        assert len(res_role.json()) >= 1
+        assert res_role.json()[0]["designation"] == "Software Engineer"
+
+        # 4. Skill search ("java")
+        res_skill = client.get(reverse("placement-opportunity-search"), {"q": "java"})
+        assert res_skill.status_code == status.HTTP_200_OK
+        assert len(res_skill.json()) >= 1
+        assert "Java" in res_skill.json()[0]["skills"]
+
+        # 5. Batch search ("2027")
+        res_batch = client.get(reverse("placement-opportunity-search"), {"q": "2027"})
+        assert res_batch.status_code == status.HTTP_200_OK
+        assert len(res_batch.json()) >= 1
+        assert res_batch.json()[0]["batch"] == "2027"
+
+        # 6. Combined multi-term search (Company + Role + Batch)
+        res_multi = client.get(reverse("placement-opportunity-search"), {"q": "tcs software 2027"})
+        assert res_multi.status_code == status.HTTP_200_OK
+        assert len(res_multi.json()) == 1
+
+        res_tata_batch = client.get(reverse("placement-opportunity-search"), {"q": "tata 2027"})
+        assert res_tata_batch.status_code == status.HTTP_200_OK
+        assert len(res_tata_batch.json()) == 1
+
+        # 7. Case-insensitivity & whitespace normalization
+        res_case = client.get(reverse("placement-opportunity-search"), {"q": "   TCS SOFTWARE   "})
+        assert res_case.status_code == status.HTTP_200_OK
+        assert len(res_case.json()) == 1
+
+        # 8. Common spelling variation ("consultency" -> "consultancy")
+        res_spell = client.get(reverse("placement-opportunity-search"), {"q": "consultency"})
+        assert res_spell.status_code == status.HTTP_200_OK
+        assert len(res_spell.json()) >= 1
+
+        # 9. Empty search query returns empty list (no database dump)
+        res_empty_q = client.get(reverse("placement-opportunity-search"), {"q": ""})
+        assert res_empty_q.status_code == status.HTTP_200_OK
+        assert len(res_empty_q.json()) == 0
+
+        # 10. Non-existent query returns empty list
         res_empty = client.get(reverse("placement-opportunity-search"), {"q": "NonExistentCompanyXYZ"})
         assert res_empty.status_code == status.HTTP_200_OK
         assert len(res_empty.json()) == 0

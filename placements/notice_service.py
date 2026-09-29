@@ -76,55 +76,234 @@ def generate_next_serial_number(notice_type: str = "Placement", target_date: Opt
 # Opportunity Search & Context Retrieval
 # ---------------------------------------------------------------------------
 
+SPELLING_FIXES: Dict[str, str] = {
+    "consultency": "consultancy",
+    "softwear": "software",
+    "enginer": "engineer",
+    "devloper": "developer",
+    "intren": "intern",
+    "anlyst": "analyst",
+}
+
+
+def _compute_opportunity_relevance(
+    opp: PlacementOpportunity,
+    q_clean: str,
+    tokens: List[str],
+) -> int:
+    """Calculate relevance score for opportunity matching.
+
+    Prioritization:
+    1. Exact company name match
+    2. Exact alias match
+    3. Company name starts with query
+    4. Alias starts with query
+    5. Company name contains full query
+    6. Designation exact / startswith / contains query
+    7. Token-level matches in company name, designation, skills, batch
+    """
+    score = 0
+    q_lower = q_clean.lower()
+    c_name = opp.company.name.lower()
+    raw_aliases = opp.company.aliases or []
+    aliases = [str(a).lower() for a in raw_aliases]
+    desig = (opp.designation or "").lower()
+    skills = (
+        [str(s).lower() for s in opp.skills]
+        if isinstance(opp.skills, list)
+        else [str(opp.skills).lower()]
+        if opp.skills
+        else []
+    )
+    job_profiles = (
+        [str(j).lower() for j in opp.job_profiles]
+        if isinstance(opp.job_profiles, list)
+        else [str(opp.job_profiles).lower()]
+        if opp.job_profiles
+        else []
+    )
+    batch = (opp.batch or "").lower()
+
+    # 1. Exact company name match
+    if c_name == q_lower:
+        score += 1000
+    # 2. Exact alias match
+    elif any(a == q_lower for a in aliases):
+        score += 900
+    # 3. Company name starts with query
+    elif c_name.startswith(q_lower):
+        score += 800
+    # 4. Alias starts with query
+    elif any(a.startswith(q_lower) for a in aliases):
+        score += 700
+    # 5. Company name contains full query
+    elif q_lower in c_name:
+        score += 600
+    # 6. Alias contains full query
+    elif any(q_lower in a for a in aliases):
+        score += 550
+
+    # Designation exact/starts/contains full query
+    if desig == q_lower:
+        score += 500
+    elif desig.startswith(q_lower):
+        score += 400
+    elif q_lower in desig:
+        score += 300
+
+    # Token-level scoring
+    for t in tokens:
+        t_low = t.lower()
+        alt_t = SPELLING_FIXES.get(t_low)
+        t_variants = [t_low] + ([alt_t] if alt_t else [])
+
+        for tv in t_variants:
+            if tv == c_name:
+                score += 150
+            elif any(tv == a for a in aliases):
+                score += 120
+            elif c_name.startswith(tv):
+                score += 100
+            elif any(a.startswith(tv) for a in aliases):
+                score += 80
+            elif tv in c_name:
+                score += 60
+            elif any(tv in a for a in aliases):
+                score += 50
+
+            if tv == desig:
+                score += 80
+            elif desig.startswith(tv):
+                score += 60
+            elif tv in desig:
+                score += 40
+
+            if any(tv in s for s in skills):
+                score += 30
+
+            if any(tv in jp for jp in job_profiles):
+                score += 25
+
+            if tv == batch:
+                score += 20
+
+    return score
+
+
 def search_placement_opportunities(
     query: str = "",
     batch: str = "",
     opp_type: str = "",
     limit: int = 50,
 ) -> List[Dict[str, Any]]:
-    """Multi-layer search for placement opportunities.
-    
+    """Multi-layer keyword search for placement opportunities with relevance ranking.
+
     Supports:
-    1. Exact matching (Company name, alias)
-    2. Keyword matching (Designation, skills, industry, batch)
-    3. Opportunity matching
-    4. Fuzzy ranking / candidate narrowing
+    1. Partial company name & keyword (e.g. 'tcs', 'tata', 'consult')
+    2. Role & Designation (e.g. 'software', 'analyst')
+    3. Skills (e.g. 'java', 'react')
+    4. Batch (e.g. '2027')
+    5. Combined multi-word keywords (e.g. 'tcs software 2027')
+    6. Common spelling variations (e.g. 'consultency' -> 'consultancy')
+    7. Relevance ranking prioritizing exact & startswith company/role matches
+    8. Safe input handling via Django ORM parameterized queries
     """
+    q_clean = query.strip()
+    batch_clean = batch.strip()
+    type_clean = opp_type.strip()
+
+    # Empty search guard: do not dump the whole database when nothing is requested
+    if not q_clean and not batch_clean and not type_clean:
+        return []
+
     qs = PlacementOpportunity.objects.select_related("company").all()
 
-    if batch:
-        qs = qs.filter(batch__iexact=batch.strip())
-    if opp_type:
-        qs = qs.filter(placement_internship__iexact=opp_type.strip())
+    if batch_clean:
+        qs = qs.filter(batch__iexact=batch_clean)
+    if type_clean and type_clean.lower() != "all":
+        qs = qs.filter(placement_internship__iexact=type_clean)
 
-    q_clean = query.strip()
-    if q_clean:
-        # Split tokens for multi-term matching (e.g. "tcs software 2027")
-        tokens = q_clean.split()
+    tokens = q_clean.split()
+    if tokens:
         q_filter = Q()
         for token in tokens:
-            token_filter = (
+            token_lower = token.lower()
+            alt_token = SPELLING_FIXES.get(token_lower)
+            token_q = (
                 Q(company__name__icontains=token)
                 | Q(company__aliases__icontains=token)
                 | Q(designation__icontains=token)
                 | Q(skills__icontains=token)
+                | Q(job_profiles__icontains=token)
                 | Q(batch__icontains=token)
                 | Q(eligible_departments__icontains=token)
                 | Q(tech_nontech__icontains=token)
+                | Q(placement_internship__icontains=token)
             )
-            q_filter &= token_filter
-        
+            if alt_token:
+                token_q |= (
+                    Q(company__name__icontains=alt_token)
+                    | Q(company__aliases__icontains=alt_token)
+                    | Q(designation__icontains=alt_token)
+                    | Q(skills__icontains=alt_token)
+                    | Q(job_profiles__icontains=alt_token)
+                )
+            q_filter &= token_q
+
         qs = qs.filter(q_filter)
 
-    qs = qs.order_by("-created_at")[:limit]
+    # Fetch candidate pool for ranking (up to 150 candidates to rank)
+    candidate_opps = list(qs.order_by("-created_at")[:150])
+
+    if q_clean:
+        candidate_opps.sort(
+            key=lambda opp: (
+                _compute_opportunity_relevance(opp, q_clean, tokens),
+                opp.created_at.timestamp() if opp.created_at else 0,
+            ),
+            reverse=True,
+        )
 
     results = []
-    for opp in qs:
-        # Format compensation representation
-        ctc_display = opp.emolument_raw.strip() if opp.emolument_raw else ""
-        if not ctc_display and opp.emolument_value:
+    for opp in candidate_opps[:limit]:
+        # Clean designation: omit "NA" or placeholder text
+        raw_desig = (opp.designation or "").strip()
+        cleaned_desig = (
+            "" if raw_desig.upper() in ("NA", "N/A", "-", "NONE", "NULL") else raw_desig
+        )
+
+        # Clean batch: omit "NA"
+        raw_batch = (opp.batch or "").strip()
+        cleaned_batch = (
+            "" if raw_batch.upper() in ("NA", "N/A", "-", "NONE", "NULL") else raw_batch
+        )
+
+        # Clean tech_nontech & placement_internship
+        raw_tech = (opp.tech_nontech or "").strip()
+        cleaned_tech = "" if raw_tech.upper() in ("NA", "N/A", "-", "NONE", "NULL") else raw_tech
+        raw_type = (opp.placement_internship or "").strip()
+        cleaned_type = "" if raw_type.upper() in ("NA", "N/A", "-", "NONE", "NULL") else raw_type
+
+        # Format compensation representation cleanly
+        raw_raw = (opp.emolument_raw or "").strip()
+        ctc_display = ""
+        if raw_raw and raw_raw.upper() not in ("NA", "N/A", "₹ NA", "₹NA", "-", "NONE", "NULL"):
+            ctc_display = raw_raw
+        elif opp.emolument_value:
             unit = opp.emolument_unit or "LPA"
             ctc_display = f"₹{opp.emolument_value} {unit}"
+
+        # Clean eligible departments list
+        raw_depts = opp.eligible_departments or []
+        cleaned_depts = [
+            d for d in raw_depts if str(d).strip().upper() not in ("NA", "N/A", "-", "NONE", "NULL")
+        ] if isinstance(raw_depts, list) else []
+
+        # Clean skills list
+        raw_skills = opp.skills or []
+        cleaned_skills = [
+            s for s in raw_skills if str(s).strip().upper() not in ("NA", "N/A", "-", "NONE", "NULL")
+        ] if isinstance(raw_skills, list) else [str(raw_skills)] if raw_skills else []
 
         results.append({
             "id": opp.id,
@@ -132,19 +311,19 @@ def search_placement_opportunities(
             "company_name": opp.company.name,
             "company_website": opp.company.website,
             "company_description": opp.company.description,
-            "company_aliases": opp.company.aliases,
-            "batch": opp.batch,
-            "designation": opp.designation,
-            "tech_nontech": opp.tech_nontech,
-            "placement_internship": opp.placement_internship,
-            "eligibility_criteria": opp.eligibility_criteria,
-            "eligible_departments": opp.eligible_departments,
-            "department_flags": opp.department_flags,
-            "job_profiles": opp.job_profiles,
-            "skills": opp.skills if isinstance(opp.skills, list) else [opp.skills] if opp.skills else [],
-            "emolument_raw": opp.emolument_raw,
-            "emolument_display": ctc_display or "As per company norms",
-            "selection_process": opp.selection_process,
+            "company_aliases": opp.company.aliases or [],
+            "batch": cleaned_batch,
+            "designation": cleaned_desig or "Role not specified",
+            "tech_nontech": cleaned_tech,
+            "placement_internship": cleaned_type or "Placement",
+            "eligibility_criteria": opp.eligibility_criteria or "",
+            "eligible_departments": cleaned_depts,
+            "department_flags": opp.department_flags or {},
+            "job_profiles": opp.job_profiles or [],
+            "skills": cleaned_skills,
+            "emolument_raw": opp.emolument_raw or "",
+            "emolument_display": ctc_display or "Not specified",
+            "selection_process": opp.selection_process or "",
             "number_of_offers": opp.number_of_offers,
             "created_at": opp.created_at.isoformat() if opp.created_at else None,
         })
