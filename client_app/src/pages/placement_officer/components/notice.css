@@ -13,9 +13,9 @@
 .main-notice {
   font-family: 'Calibri', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   width: 100%;
-  max-width: 860px;
+  max-width: 900px;
   background: #ffffff;
-  padding: 30px 40px 24px 40px;
+  padding: 28px 36px 24px 36px;
   margin: 0 auto;
   color: #111827;
   line-height: 1.5;
@@ -26,7 +26,9 @@
 
 /* Header & Official Letterhead */
 .notice-header-container {
-  width: 100%;
+  width: calc(100% + 32px);
+  margin-left: -16px;
+  margin-right: -16px;
   text-align: center;
   margin-bottom: 8px;
 }
@@ -35,7 +37,7 @@
   width: 100%;
   max-width: 100%;
   height: auto;
-  max-height: 125px;
+  max-height: 160px;
   object-fit: contain;
   display: block;
   margin: 0 auto;
