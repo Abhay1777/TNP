@@ -1,0 +1,42 @@
+﻿# LOCAL ONE-LINK DEVELOPMENT OVERRIDE
+#
+# Use together with docker-compose.dev.yml:
+#
+#   docker compose -f docker-compose.yml `
+#                  -f docker-compose.dev.yml `
+#                  -f docker-compose.local.yml `
+#                  up -d --build
+#
+# After startup everything is available at:
+#   http://localhost        <- React frontend (Nginx)
+#   http://localhost/api/   <- Django REST API (proxied by Nginx)
+#   http://localhost/auth/  <- Django Auth endpoints (proxied)
+#   http://localhost/ws/    <- Django Channels WebSocket (proxied)
+#   http://localhost/admin/ <- Django Admin (proxied)
+#
+# Port 5173 (from docker-compose.dev.yml) is kept as a fallback.
+# Port 80 (this file) is the single-entry browser address.
+
+services:
+  frontend:
+    ports:
+      - "80:80"
+    volumes:
+      # Use a local nginx conf that also forwards /ws/ and /admin/ for dev
+      - ./client_app/nginx.local.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # Make the external dokploy-network optional locally.
+  api:
+    networks:
+      - default
+
+  celery:
+    networks:
+      - default
+
+networks:
+  # Shadow the external network declaration with an internal one so
+  # docker network create dokploy-network is NOT needed locally.
+  dokploy-network:
+    external: false
+    name: tnp_local_net

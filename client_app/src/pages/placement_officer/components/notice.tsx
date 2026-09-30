@@ -288,10 +288,19 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
             </div>
           </div>
 
-          {/* 17. Institutional Page Footer */}
-          <div className="institutional-bottom-bar">
-            <span>TCET Training &amp; Placement Cell</span>
-            <span>Official Institutional Document</span>
+          {/* 17. TCET Footer — Official Institutional Document Footer */}
+          <div className="tcet-footer">
+            <div className="tcet-footer__divider" />
+            <div className="tcet-footer__inner">
+              <div className="tcet-footer__brand">
+                <span className="tcet-footer__name">TCET Training &amp; Placement Cell</span>
+                <span className="tcet-footer__institute">Thakur College of Engineering &amp; Technology</span>
+              </div>
+              <div className="tcet-footer__contact">
+                <span>📍 Thakur Village, Kandivali (East), Mumbai – 400 101</span>
+                <span>🌐 www.tcetmumbai.in &nbsp;|&nbsp; ✉ tnp@tcetmumbai.in</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

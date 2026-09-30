@@ -13,7 +13,7 @@
 .main-notice {
   font-family: 'Calibri', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   width: 100%;
-  max-width: 900px;
+  max-width: 960px;
   background: #ffffff;
   padding: 28px 36px 24px 36px;
   margin: 0 auto;
@@ -26,19 +26,20 @@
 
 /* Header & Official Letterhead */
 .notice-header-container {
-  width: calc(100% + 32px);
-  margin-left: -16px;
-  margin-right: -16px;
+  width: calc(100% + 72px);
+  margin-left: -36px;
+  margin-right: -36px;
+  margin-top: -28px;
+  padding: 8px 16px 0 16px;
+  box-sizing: border-box;
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  overflow: hidden;
 }
 
 .header-image {
   width: 100%;
-  max-width: 100%;
   height: auto;
-  max-height: 160px;
-  object-fit: contain;
   display: block;
   margin: 0 auto;
 }
@@ -264,18 +265,61 @@
   white-space: nowrap;
 }
 
-/* Institutional Footer Bar */
-.institutional-bottom-bar {
-  margin-top: 22px;
-  padding-top: 8px;
-  border-top: 1px solid #e2e8f0;
+/* TCET Footer (Official Institutional Document Footer) */
+.tcet-footer {
+  margin-top: 28px;
+  page-break-inside: avoid;
+}
+
+.tcet-footer__divider {
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #1a365d 0%, #2b6cb0 60%, #1a365d 100%);
+  margin-bottom: 10px;
+}
+
+.tcet-footer__inner {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  color: #64748b;
-  letter-spacing: 0.5px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 4px 4px 4px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+.tcet-footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tcet-footer__name {
+  font-weight: 800;
+  font-size: 11px;
+  color: #1a365d;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
 }
+
+.tcet-footer__institute {
+  font-weight: 400;
+  font-size: 10px;
+  color: #475569;
+  letter-spacing: 0.3px;
+}
+
+.tcet-footer__contact {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 9.5px;
+  color: #64748b;
+  text-align: right;
+  letter-spacing: 0.2px;
+}
+
 
 /* ==========================================================================
    Print & PDF Specifications (A4 Optimized)
@@ -309,8 +353,17 @@
     line-height: 1.45 !important;
   }
 
+  .notice-header-container {
+    width: calc(100% + 30mm) !important;
+    margin-left: -15mm !important;
+    margin-right: -15mm !important;
+    margin-top: -12mm !important;
+  }
+
   .header-image {
-    max-height: 95px !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
   }
 
   .content-header {
@@ -365,9 +418,31 @@
     page-break-inside: avoid !important;
   }
 
-  .institutional-bottom-bar {
+  .tcet-footer {
     margin-top: 14pt !important;
-    font-size: 8pt !important;
+    page-break-inside: avoid !important;
+  }
+
+  .tcet-footer__divider {
+    height: 2pt !important;
+    margin-bottom: 6pt !important;
+  }
+
+  .tcet-footer__inner {
+    padding: 4pt 2pt 6pt 2pt !important;
+    border-bottom: 0.75pt solid #cbd5e1 !important;
+  }
+
+  .tcet-footer__name {
+    font-size: 8.5pt !important;
+  }
+
+  .tcet-footer__institute {
+    font-size: 7.5pt !important;
+  }
+
+  .tcet-footer__contact {
+    font-size: 7pt !important;
   }
 
   .table-wrapper {

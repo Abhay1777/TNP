@@ -170,21 +170,46 @@ REDIS_HOST = os.getenv("REDIS_HOST", "redis" if not IS_DEV else "localhost")
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD") if IS_DEV else require_env("REDIS_PASSWORD")
 REDIS_AUTH = f":{REDIS_PASSWORD}@" if REDIS_PASSWORD else ""
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [f"redis://{REDIS_AUTH}{REDIS_HOST}:6379/2"],
-        },
-    },
-}
+USE_REDIS = False
+if IS_DEV:
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        s.connect((REDIS_HOST, 6379))
+        s.close()
+        USE_REDIS = True
+    except Exception:
+        USE_REDIS = False
+else:
+    USE_REDIS = True
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": f"redis://{REDIS_AUTH}{REDIS_HOST}:6379/1",
+if USE_REDIS:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [f"redis://{REDIS_AUTH}{REDIS_HOST}:6379/2"],
+            },
+        },
     }
-}
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"redis://{REDIS_AUTH}{REDIS_HOST}:6379/1",
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
 
 # ---------------------------------
 # DATABASE
@@ -363,12 +388,18 @@ if IS_DEV:
         "http://127.0.0.1:5173",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        # One-link Docker local setup (port 80 via nginx.local.conf)
+        "http://localhost",
+        "http://127.0.0.1",
     ]
     CSRF_TRUSTED_ORIGINS = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        # One-link Docker local setup
+        "http://localhost",
+        "http://127.0.0.1",
     ]
     SESSION_COOKIE_DOMAIN = None
     CSRF_COOKIE_DOMAIN = None
