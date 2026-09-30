@@ -445,7 +445,19 @@
     font-size: 7pt !important;
   }
 
+  .footer-image {
+    width: 100% !important;
+    margin-top: 14pt !important;
+    page-break-inside: avoid !important;
+  }
+
   .table-wrapper {
     page-break-inside: avoid !important;
   }
 }
+
+.footer-image {
+  width: 100%;
+  margin-top: 20px;
+}
+
