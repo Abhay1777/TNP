@@ -45,11 +45,7 @@
 }
 
 .header-divider {
-  width: 100%;
-  height: 2px;
-  background-color: #1a365d;
-  margin-top: 10px;
-  margin-bottom: 12px;
+  display: none !important;
 }
 
 /* Document Title */
@@ -324,6 +320,12 @@
 /* ==========================================================================
    Print & PDF Specifications (A4 Optimized — ONE PAGE)
    ========================================================================== */
+
+
+.header-divider {
+  display: none !important;
+}
+
 @media print {
   @page {
     size: A4 portrait;
@@ -351,6 +353,9 @@
     margin: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
+    min-height: calc(297mm - 16mm) !important;
+    display: flex !important;
+    flex-direction: column !important;
     font-size: 9.5pt !important;
     line-height: 1.35 !important;
   }
@@ -493,7 +498,8 @@
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    margin-top: 6pt !important;
+    margin-top: auto !important;
+    padding-top: 8pt !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     page-break-before: avoid !important;
@@ -530,4 +536,3 @@
     font-size: 6.5pt !important;
   }
 }
-
