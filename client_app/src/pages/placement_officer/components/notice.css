@@ -354,16 +354,24 @@
   }
 
   .notice-header-container {
-    width: calc(100% + 30mm) !important;
-    margin-left: -15mm !important;
-    margin-right: -15mm !important;
-    margin-top: -12mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
   }
 
   .header-image {
+    display: block !important;
     width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
     max-height: none !important;
+    object-fit: contain !important;
+    margin: 0 auto !important;
   }
 
   .content-header {
