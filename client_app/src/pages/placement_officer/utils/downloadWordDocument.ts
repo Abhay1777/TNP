@@ -2,7 +2,7 @@ import {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, TableLayoutType, TabStopType, Header, ExternalHyperlink,
     ImageRun, AlignmentType
 } from "docx";
-import noticeHeader from "@/assets/tcet header.jpg";
+import noticeHeader from "@/assets/tcet header.png";
 import copytoimage from "@/assets/pmt-placement_drive_copytoImage.png";
 import { saveAs } from "file-saver";
 import { BASE_URL } from "@/constant";

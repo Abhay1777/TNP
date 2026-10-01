@@ -322,12 +322,12 @@
 
 
 /* ==========================================================================
-   Print & PDF Specifications (A4 Optimized)
+   Print & PDF Specifications (A4 Optimized — ONE PAGE)
    ========================================================================== */
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm 15mm 15mm 15mm;
+    margin: 8mm 12mm 8mm 12mm;
   }
 
   body {
@@ -340,8 +340,10 @@
 
   .notice-document-wrapper {
     padding: 0 !important;
+    margin: 0 !important;
   }
 
+  /* Main notice box: zero padding/margin, compact font */
   .main-notice {
     box-shadow: none !important;
     border-radius: 0 !important;
@@ -349,19 +351,19 @@
     margin: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
-    font-size: 11pt !important;
-    line-height: 1.45 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.35 !important;
   }
 
+  /* Header: full width, no bleed overflow, no clipping */
   .notice-header-container {
     width: 100% !important;
     max-width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    margin-top: 0 !important;
+    margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
     box-sizing: border-box !important;
+    margin-bottom: 4pt !important;
   }
 
   .header-image {
@@ -369,103 +371,163 @@
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    max-height: none !important;
     object-fit: contain !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
   }
 
+  .header-divider {
+    margin-top: 4pt !important;
+    margin-bottom: 4pt !important;
+    height: 1.5pt !important;
+  }
+
+  /* NOTICE title */
   .content-header {
-    font-size: 16pt !important;
-    margin: 6pt 0 10pt 0 !important;
+    font-size: 13pt !important;
+    margin: 4pt 0 6pt 0 !important;
   }
 
+  /* Serial / Date row */
   .metadata-row {
-    font-size: 10.5pt !important;
-    margin-bottom: 10pt !important;
+    font-size: 9.5pt !important;
+    margin-bottom: 6pt !important;
+    padding-bottom: 4pt !important;
   }
 
+  /* Body text */
   .main-body {
-    font-size: 10.5pt !important;
+    font-size: 9.5pt !important;
+    line-height: 1.35 !important;
   }
 
   .notice-row {
-    margin-bottom: 7pt !important;
-    line-height: 1.45 !important;
+    margin-bottom: 4pt !important;
+    line-height: 1.35 !important;
   }
 
   .note-row {
     background-color: #f8fafc !important;
-    border-left: 3pt solid #3b82f6 !important;
-    padding: 6pt 8pt !important;
+    border-left: 2.5pt solid #3b82f6 !important;
+    padding: 4pt 6pt !important;
+    margin-top: 4pt !important;
+  }
+
+  /* Table */
+  .table-wrapper {
+    margin: 6pt 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .placement-details-table {
-    font-size: 10pt !important;
+    font-size: 9pt !important;
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .placement-details-table th {
     background-color: #f1f5f9 !important;
     color: #000000 !important;
-    font-size: 9.5pt !important;
-    padding: 5pt 8pt !important;
+    font-size: 8.5pt !important;
+    padding: 3pt 6pt !important;
   }
 
   .placement-details-table td {
-    padding: 5pt 8pt !important;
+    padding: 3pt 6pt !important;
   }
 
+  /* Signature block - tight margin */
   .fromto-signature-block {
-    margin-top: 24pt !important;
+    margin-top: 8pt !important;
+    margin-bottom: 0 !important;
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
+  .fromto-signature-block .sig-sd {
+    margin: 0 0 12pt 0 !important;
+    font-size: 9.5pt !important;
+  }
+
+  .fromto-signature-block .sig-name {
+    font-size: 9.5pt !important;
+    margin: 0 0 1pt 0 !important;
+  }
+
+  .fromto-signature-block .sig-designation {
+    font-size: 9pt !important;
+    margin: 0 !important;
+  }
+
+  /* Copy To - keep on same page, tight spacing */
   .notice-copyto-block {
-    margin-top: 16pt !important;
-    padding-top: 8pt !important;
+    margin-top: 6pt !important;
+    padding-top: 4pt !important;
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
   }
 
-  .tcet-footer {
-    margin-top: 14pt !important;
+  .copyto-header {
+    font-size: 9pt !important;
+    margin-bottom: 3pt !important;
+  }
+
+  .copyto-list {
+    line-height: 1.3 !important;
+    font-size: 9pt !important;
+  }
+
+  .brace-symbol {
+    font-size: 22px !important;
+  }
+
+  .brace-symbol-large {
+    font-size: 36px !important;
+  }
+
+  /* Footer image - keep on same page, tight margin */
+  .footer-image {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin-top: 6pt !important;
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+
+  /* CSS footer fallback */
+  .tcet-footer {
+    margin-top: 6pt !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
   }
 
   .tcet-footer__divider {
-    height: 2pt !important;
-    margin-bottom: 6pt !important;
+    height: 1.5pt !important;
+    margin-bottom: 4pt !important;
   }
 
   .tcet-footer__inner {
-    padding: 4pt 2pt 6pt 2pt !important;
-    border-bottom: 0.75pt solid #cbd5e1 !important;
+    padding: 3pt 2pt 4pt 2pt !important;
   }
 
   .tcet-footer__name {
-    font-size: 8.5pt !important;
+    font-size: 8pt !important;
   }
 
   .tcet-footer__institute {
-    font-size: 7.5pt !important;
-  }
-
-  .tcet-footer__contact {
     font-size: 7pt !important;
   }
 
-  .footer-image {
-    width: 100% !important;
-    margin-top: 14pt !important;
-    page-break-inside: avoid !important;
+  .tcet-footer__contact {
+    font-size: 6.5pt !important;
   }
-
-  .table-wrapper {
-    page-break-inside: avoid !important;
-  }
-}
-
-.footer-image {
-  width: 100%;
-  margin-top: 20px;
 }
 

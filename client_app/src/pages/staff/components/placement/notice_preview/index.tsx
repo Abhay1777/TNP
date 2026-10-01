@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import "./notice.css";
-import noticeHeader from "@/assets/tcet header.jpg";
+import noticeHeader from "@/assets/tcet header.png";
 import noticeFooter from "@/assets/tcet footer.png";
 import { BASE_URL } from "@/constant";
 import { FormDataType } from "@/pages/staff/placement_company";

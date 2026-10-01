@@ -164,7 +164,7 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm;
+    margin: 8mm 12mm 8mm 12mm;
   }
   body {
     margin: 0 !important;
@@ -184,39 +184,84 @@
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
-    page-break-inside: avoid;
+    font-size: 9.5pt !important;
+    line-height: 1.35 !important;
   }
   .header-image {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    margin-top: 0 !important;
+    margin: 0 !important;
     object-fit: contain !important;
   }
+  .notice-title {
+    font-size: 13pt !important;
+    margin: 4pt 0 6pt 0 !important;
+  }
+  .notice-meta {
+    font-size: 9.5pt !important;
+    margin: 4pt 0 !important;
+  }
+  .notice-content {
+    margin-top: 4pt !important;
+  }
+  .notice-content p,
+  .notice-content li {
+    margin: 3pt 0 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.35 !important;
+  }
+  .notice-table th,
+  .notice-table td {
+    padding: 3pt 5pt !important;
+    font-size: 9pt !important;
+  }
+  .notice-bottom {
+    margin-top: 8pt !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .notice-signature {
+    margin-top: 0 !important;
+    font-size: 9.5pt !important;
+  }
+  .notice-copyto {
+    margin-top: 0 !important;
+    font-size: 9pt !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
   .footer-image {
+    display: block !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    margin-top: 15px !important;
+    margin-top: 6pt !important;
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
   }
   .tcet-footer {
-    page-break-inside: avoid;
+    margin-top: 6pt !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
   .tcet-footer__divider {
-    height: 2pt;
-    margin-bottom: 5pt;
+    height: 1.5pt !important;
+    margin-bottom: 4pt !important;
   }
   .tcet-footer__name {
-    font-size: 8pt;
+    font-size: 8pt !important;
   }
   .tcet-footer__institute {
-    font-size: 7pt;
+    font-size: 7pt !important;
   }
   .tcet-footer__contact {
-    font-size: 6.5pt;
+    font-size: 6.5pt !important;
   }
 }
+

@@ -1,4 +1,5 @@
-import headerImage from "@/assets/tcet header.jpg";
+import headerImage from "@/assets/tcet header.png";
+
 import copytoimage from "@/assets/pmt-placement_drive_copytoImage.png";
 import "./notice.css";
 import { forwardRef } from "react";
