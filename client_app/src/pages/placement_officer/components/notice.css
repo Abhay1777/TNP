@@ -198,7 +198,7 @@
 .notice-copyto-block {
   margin-top: 24px;
   padding-top: 12px;
-  border-top: 1px solid #cbd5e1;
+  /* border-top removed */
   page-break-inside: avoid;
 }
 
