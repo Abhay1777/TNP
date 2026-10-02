@@ -507,11 +507,11 @@ const PlacementNotice: React.FC = () => {
       Documents_to_Carry: formData.Documents_to_Carry,
       Walk_in_interview: formData.Walk_in_interview,
       Company_registration_Link: formData.Company_registration_Link,
-      College_registration_Link: formData.College_registration_Link,
       Note: formData.Note,
       From: formData.From,
       From_designation: formData.From_designation,
       location: formData.location,
+      deadline: formData.deadline,
       noticeId: noticeId ? String(noticeId) : "Draft",
     };
   }, [formData, tableRows, skillTags, noticeId]);
@@ -710,14 +710,14 @@ const PlacementNotice: React.FC = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
-                  label="Application Deadline"
-                  type="date"
+                  label="Deadline to Register"
                   name="deadline"
                   value={formData.deadline}
                   onChange={handleChange}
                   fullWidth
                   size="small"
-                  InputLabelProps={{ shrink: true }}
+                  placeholder="e.g. 30.09.2026 by 10.00 am"
+                  helperText="Date & time (e.g. 30.09.2026 by 10.00 am)"
                 />
               </Grid>
             </Grid>
@@ -907,7 +907,7 @@ const PlacementNotice: React.FC = () => {
             <Grid container spacing={2} sx={{ mb: 3 }}>
               <Grid item xs={12}>
                 <TextField
-                  label="Selection Process / Rounds"
+                  label="Selection Process"
                   name="Walk_in_interview"
                   value={formData.Walk_in_interview}
                   onChange={handleChange}
@@ -929,7 +929,7 @@ const PlacementNotice: React.FC = () => {
                   size="small"
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   label="Company Registration Link"
                   name="Company_registration_Link"
@@ -938,17 +938,6 @@ const PlacementNotice: React.FC = () => {
                   fullWidth
                   size="small"
                   placeholder="https://careers.company.com/apply"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="College Registration Link (Optional override)"
-                  name="College_registration_Link"
-                  value={formData.College_registration_Link}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  placeholder="Leave blank for automatic portal link"
                 />
               </Grid>
               <Grid item xs={12}>

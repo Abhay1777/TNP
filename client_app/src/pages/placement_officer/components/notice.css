@@ -8,10 +8,11 @@
   width: 100%;
   padding: 10px 0;
   background-color: transparent;
+  font-family: Arial, Helvetica, sans-serif !important;
 }
 
 .main-notice {
-  font-family: 'Calibri', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-family: Arial, Helvetica, sans-serif !important;
   width: 100%;
   max-width: 960px;
   background: #ffffff;
@@ -22,6 +23,56 @@
   box-sizing: border-box;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   border-radius: 4px;
+}
+
+/* Constant Institutional Metadata Top Block */
+.constant-top-block {
+  font-family: Arial, Helvetica, sans-serif !important;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.top-doc-meta {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-size: 13.5px !important;
+  font-weight: bold !important;
+  color: #0f172a !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.doc-code {
+  text-align: left;
+}
+
+.doc-revision {
+  text-align: right;
+}
+
+.top-cell-title {
+  text-align: center !important;
+  font-size: 15px !important;
+  font-weight: bold !important;
+  color: #0f172a !important;
+  margin-top: 6px !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+/* Bullet List Item Formatting (Line-by-line) */
+.notice-bullet-list {
+  margin: 4px 0 4px 20px !important;
+  padding: 0 !important;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+}
+
+.notice-bullet-item {
+  margin-bottom: 3px !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+  display: list-item !important;
+  font-family: Arial, Helvetica, sans-serif !important;
 }
 
 /* Header & Official Letterhead */
@@ -44,6 +95,7 @@
   margin: 0 auto;
 }
 
+/* Hide the extra divider below the official header */
 .header-divider {
   display: none !important;
 }
@@ -57,7 +109,13 @@
   letter-spacing: 3px;
   color: #0f172a;
   text-transform: uppercase;
-  font-family: 'Times New Roman', Times, Georgia, serif;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+/* Subject + subject content underline */
+.subject-underline,
+.notice-row\.subject-row {
+  text-decoration: underline !important;
 }
 
 /* Metadata Row (Serial No. and Date) */
@@ -66,7 +124,7 @@
   justify-content: space-between;
   align-items: baseline;
   font-size: 13.5px;
-  border-bottom: 1px solid #cbd5e1;
+  border-bottom: none;
   padding-bottom: 6px;
   margin-bottom: 14px;
 }
@@ -106,6 +164,7 @@
   color: #0f172a;
 }
 
+/* Note */
 .note-row {
   margin-top: 12px;
   padding: 8px 12px;
@@ -246,7 +305,7 @@
   line-height: 1;
   color: #64748b;
   font-weight: 300;
-  font-family: 'Times New Roman', Times, serif;
+  font-family: "Times New Roman", Times, serif;
 }
 
 .brace-symbol-large {
@@ -254,7 +313,7 @@
   line-height: 1;
   color: #64748b;
   font-weight: 300;
-  font-family: 'Times New Roman', Times, serif;
+  font-family: "Times New Roman", Times, serif;
 }
 
 .annotation-label {
@@ -270,7 +329,10 @@
 .tcet-footer__divider {
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, #1a365d 0%, #2b6cb0 60%, #1a365d 100%);
+  background: linear-gradient(90deg,
+      #1a365d 0%,
+      #2b6cb0 60%,
+      #1a365d 100%);
   margin-bottom: 10px;
 }
 
@@ -316,20 +378,14 @@
   letter-spacing: 0.2px;
 }
 
-
 /* ==========================================================================
    Print & PDF Specifications (A4 Optimized — ONE PAGE)
    ========================================================================== */
 
-
-.header-divider {
-  display: none !important;
-}
-
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm 12mm 8mm 12mm;
+    margin: 5mm 12mm 5mm 12mm;
   }
 
   body {
@@ -345,7 +401,10 @@
     margin: 0 !important;
   }
 
-  /* Main notice box: zero padding/margin, compact font */
+  /*
+   * Keep the notice inside the A4 printable area.
+   * Do not force the document into a full-height flex layout.
+   */
   .main-notice {
     box-shadow: none !important;
     border-radius: 0 !important;
@@ -353,14 +412,15 @@
     margin: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
-    min-height: calc(297mm - 16mm) !important;
-    display: flex !important;
-    flex-direction: column !important;
+    min-height: 0 !important;
+    height: auto !important;
+    display: block !important;
     font-size: 9.5pt !important;
-    line-height: 1.35 !important;
+    line-height: 1.25 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
   }
 
-  /* Header: full width, no bleed overflow, no clipping */
+  /* Header: full printable width, no horizontal bleed */
   .notice-header-container {
     width: 100% !important;
     max-width: 100% !important;
@@ -368,7 +428,7 @@
     padding: 0 !important;
     overflow: visible !important;
     box-sizing: border-box !important;
-    margin-bottom: 4pt !important;
+    margin-bottom: 3pt !important;
   }
 
   .header-image {
@@ -377,97 +437,155 @@
     max-width: 100% !important;
     height: auto !important;
     object-fit: contain !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
   }
 
+  /* Ensure the divider remains hidden in print */
   .header-divider {
-    margin-top: 4pt !important;
-    margin-bottom: 4pt !important;
-    height: 1.5pt !important;
+    display: none !important;
+  }
+
+  /* Constant top metadata */
+  .constant-top-block {
+    margin-top: 2pt !important;
+    margin-bottom: 3pt !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+
+  .top-doc-meta {
+    font-size: 9pt !important;
+    line-height: 1.1 !important;
+  }
+
+  .top-cell-title {
+    font-size: 10pt !important;
+    margin-top: 2pt !important;
   }
 
   /* NOTICE title */
   .content-header {
-    font-size: 13pt !important;
-    margin: 4pt 0 6pt 0 !important;
+    font-size: 12pt !important;
+    margin: 3pt 0 4pt 0 !important;
+    letter-spacing: 2px !important;
+    font-family: Arial, Helvetica, sans-serif !important;
   }
 
   /* Serial / Date row */
   .metadata-row {
-    font-size: 9.5pt !important;
-    margin-bottom: 6pt !important;
-    padding-bottom: 4pt !important;
+    font-size: 8.5pt !important;
+    margin-bottom: 4pt !important;
+    padding-bottom: 2pt !important;
+    border-bottom: none !important;
   }
 
   /* Body text */
   .main-body {
-    font-size: 9.5pt !important;
-    line-height: 1.35 !important;
+    font-size: 8.5pt !important;
+    line-height: 1.25 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
   }
 
   .notice-row {
-    margin-bottom: 4pt !important;
-    line-height: 1.35 !important;
+    margin-bottom: 2pt !important;
+    line-height: 1.25 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
   }
 
+  .notice-label {
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+
+  .subject-text {
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+
+  /* Subject + its content remain underlined in print */
+  .subject-underline,
+  .notice-row\.subject-row {
+    text-decoration: underline !important;
+  }
+
+  /* Bullet lists */
+  .notice-bullet-list {
+    margin: 2pt 0 2pt 16pt !important;
+    padding: 0 !important;
+    list-style-type: disc !important;
+    list-style-position: outside !important;
+  }
+
+  .notice-bullet-item {
+    margin-bottom: 1pt !important;
+    line-height: 1.2 !important;
+    display: list-item !important;
+    font-size: 8.5pt !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+
+  /* Note */
   .note-row {
     background-color: #f8fafc !important;
     border-left: 2.5pt solid #3b82f6 !important;
-    padding: 4pt 6pt !important;
-    margin-top: 4pt !important;
+    padding: 3pt 5pt !important;
+    margin-top: 3pt !important;
+    font-family: Arial, Helvetica, sans-serif !important;
   }
 
   /* Table */
   .table-wrapper {
-    margin: 6pt 0 !important;
+    margin: 4pt 0 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    width: 100% !important;
+    overflow: visible !important;
   }
 
   .placement-details-table {
-    font-size: 9pt !important;
+    width: 100% !important;
+    font-size: 8pt !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+
+  .placement-details-table th,
+  .placement-details-table td {
+    padding: 2pt 5pt !important;
   }
 
   .placement-details-table th {
     background-color: #f1f5f9 !important;
     color: #000000 !important;
-    font-size: 8.5pt !important;
-    padding: 3pt 6pt !important;
+    font-size: 7.5pt !important;
   }
 
-  .placement-details-table td {
-    padding: 3pt 6pt !important;
-  }
-
-  /* Signature block - tight margin */
+  /* Signature block */
   .fromto-signature-block {
-    margin-top: 8pt !important;
+    margin-top: 4pt !important;
     margin-bottom: 0 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    padding-right: 4px !important;
   }
 
   .fromto-signature-block .sig-sd {
-    margin: 0 0 12pt 0 !important;
-    font-size: 9.5pt !important;
+    margin: 0 0 6pt 0 !important;
+    font-size: 8.5pt !important;
   }
 
   .fromto-signature-block .sig-name {
-    font-size: 9.5pt !important;
+    font-size: 8.5pt !important;
     margin: 0 0 1pt 0 !important;
   }
 
   .fromto-signature-block .sig-designation {
-    font-size: 9pt !important;
+    font-size: 8pt !important;
     margin: 0 !important;
   }
 
-  /* Copy To - keep on same page, tight spacing */
+  /* Copy To */
   .notice-copyto-block {
-    margin-top: 6pt !important;
-    padding-top: 4pt !important;
+    margin-top: 3pt !important;
+    padding-top: 2pt !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     page-break-before: avoid !important;
@@ -475,40 +593,63 @@
   }
 
   .copyto-header {
-    font-size: 9pt !important;
-    margin-bottom: 3pt !important;
+    font-size: 8pt !important;
+    margin-bottom: 2pt !important;
+  }
+
+  .copyto-grid {
+    gap: 14px !important;
+    font-size: 8pt !important;
   }
 
   .copyto-list {
-    line-height: 1.3 !important;
-    font-size: 9pt !important;
+    line-height: 1.15 !important;
+    font-size: 8pt !important;
+    margin-left: 16px !important;
+  }
+
+  .copyto-col-annotations {
+    padding-left: 4px !important;
+  }
+
+  .annotation-tier {
+    gap: 6px !important;
+    font-size: 7.5pt !important;
   }
 
   .brace-symbol {
-    font-size: 22px !important;
+    font-size: 18px !important;
   }
 
   .brace-symbol-large {
-    font-size: 36px !important;
+    font-size: 30px !important;
   }
 
-  /* Footer image - keep on same page, tight margin */
+  .annotation-label {
+    white-space: nowrap !important;
+  }
+
+  /*
+   * Footer:
+   * Keep the footer fixed at the bottom of the printed A4 page.
+   */
   .footer-image {
     display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    position: fixed !important;
+    left: 12mm !important;
+    bottom: 5mm !important;
+    width: calc(100% - 24mm) !important;
+    max-width: calc(100% - 24mm) !important;
     height: auto !important;
-    margin-top: auto !important;
-    padding-top: 8pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    page-break-before: avoid !important;
-    break-before: avoid !important;
   }
 
   /* CSS footer fallback */
   .tcet-footer {
-    margin-top: 6pt !important;
+    margin-top: 5pt !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     page-break-before: avoid !important;
@@ -517,22 +658,31 @@
 
   .tcet-footer__divider {
     height: 1.5pt !important;
-    margin-bottom: 4pt !important;
+    margin-bottom: 3pt !important;
   }
 
   .tcet-footer__inner {
-    padding: 3pt 2pt 4pt 2pt !important;
+    padding: 2pt 2pt 3pt 2pt !important;
   }
 
   .tcet-footer__name {
-    font-size: 8pt !important;
-  }
-
-  .tcet-footer__institute {
     font-size: 7pt !important;
   }
 
-  .tcet-footer__contact {
+  .tcet-footer__institute {
     font-size: 6.5pt !important;
+  }
+
+  .tcet-footer__contact {
+    font-size: 6pt !important;
+  }
+
+  /* Explicitly prevent accidental horizontal overflow */
+  html,
+  body,
+  .notice-document-wrapper,
+  .main-notice {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
   }
 }

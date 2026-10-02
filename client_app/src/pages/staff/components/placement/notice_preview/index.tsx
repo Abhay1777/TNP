@@ -2,17 +2,41 @@ import { forwardRef } from "react";
 import "./notice.css";
 import noticeHeader from "@/assets/tcet header.png";
 import noticeFooter from "@/assets/tcet footer.png";
-import { BASE_URL } from "@/constant";
 import { FormDataType } from "@/pages/staff/placement_company";
 
 interface NoticeFormData extends FormDataType {
   id: number;
 }
 
+const formatDeadlineSentence = (deadlineStr?: string): string => {
+  if (!deadlineStr || !deadlineStr.trim()) {
+    return "All the eligible and interested students are required to register their names online latest by 30.09.2026 by 10.00 am.";
+  }
+  const trimmed = deadlineStr.trim();
+  if (trimmed.toLowerCase().startsWith("all the eligible")) {
+    return trimmed;
+  }
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
+  if (isoMatch) {
+    const [, year, month, day, hours, minutes] = isoMatch;
+    const dateFormatted = `${day}.${month}.${year}`;
+    let timeFormatted = "10.00 am";
+    if (hours !== undefined && minutes !== undefined) {
+      const h = parseInt(hours, 10);
+      const ampm = h >= 12 ? "pm" : "am";
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      const mStr = minutes.padStart(2, "0");
+      timeFormatted = `${h12}.${mStr} ${ampm}`;
+    }
+    return `All the eligible and interested students are required to register their names online latest by ${dateFormatted} by ${timeFormatted}.`;
+  }
+  return `All the eligible and interested students are required to register their names online latest by ${trimmed}.`;
+};
+
 const notice = forwardRef<
   HTMLDivElement,
   { formData: NoticeFormData; isPlacement?: boolean }
->(({ formData, isPlacement = true }, ref) => {
+>(({ formData, isPlacement: _isPlacement = true }, ref) => {
   const hasMultipleJobs = formData.job_offers.length > 1;
   const singleJob = !hasMultipleJobs ? formData.job_offers[0] : null;
 
@@ -21,6 +45,15 @@ const notice = forwardRef<
       <div className="notice-container" ref={ref}>
         {/* Header */}
         <img src={noticeHeader} alt="Header" className="header-image" />
+
+        {/* Constant Institutional Metadata Top Block */}
+        <div className="constant-top-block">
+          <div className="top-doc-meta">
+            <span className="doc-code">TCET/FRM/MP-04/11</span>
+            <span className="doc-revision">Revision: B</span>
+          </div>
+          <div className="top-cell-title">Training and Placement Cell</div>
+        </div>
 
         <h2 className="notice-title">NOTICE</h2>
 
@@ -42,7 +75,9 @@ const notice = forwardRef<
           </p>
 
           <p>
-            <strong>Sub:</strong> {formData.notice.subject}
+            <u>
+              <strong>Sub:</strong> {formData.notice.subject}
+            </u>
           </p>
 
           <ol>
@@ -130,22 +165,21 @@ const notice = forwardRef<
             </li>
 
             <li>
-              All the eligible and interested students are required to register
-              online before the deadline <b>{formData.notice.deadline}</b>
-              <br />
-              <strong>Company Link:</strong>{" "}
-              <a href={formData.notice.company_registration_link}>
-                {formData.notice.company_registration_link}
-              </a>
-              <br />
-              <strong>College Registration Link:</strong>{" "}
-              <a
-                href={`${BASE_URL}/student/${
-                  isPlacement ? "placement" : "internship"
-                }/registration/${formData.id}`}
-              >
-                {formData.name} Registration Link
-              </a>
+              <strong>Deadline to Register:</strong>{" "}
+              {formatDeadlineSentence(formData.notice.deadline)}
+              {formData.notice.company_registration_link && (
+                <>
+                  <br />
+                  <strong>Registration Link:</strong>{" "}
+                  <a
+                    href={formData.notice.company_registration_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {formData.notice.company_registration_link}
+                  </a>
+                </>
+              )}
             </li>
 
             <li>
@@ -184,3 +218,4 @@ const notice = forwardRef<
 });
 
 export default notice;
+

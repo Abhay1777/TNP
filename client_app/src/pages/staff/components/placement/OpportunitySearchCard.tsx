@@ -237,7 +237,7 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
         <TextField
           inputRef={inputRef}
           size="small"
-          placeholder="Search company, role, skill, batch (e.g. TCS, Software, Java, 2027)..."
+          placeholder="Search company, role, skill, batch (e.g. Infosys, Software, Java, 2027)..."
           value={searchQuery}
           onChange={(e) => {
             if (!isEditing) setIsEditing(true);
@@ -600,7 +600,7 @@ const OpportunitySearchCard: React.FC<OpportunitySearchCardProps> = ({
                 Search for a company or placement opportunity to auto-fill the notice details.
               </Typography>
               <Typography variant="caption" sx={{ color: "#94a3b8" }}>
-                Try: TCS • Software • Java • Batch 2027
+                Try: Infosys • Software • Java • Batch 2027
               </Typography>
             </Box>
           )}

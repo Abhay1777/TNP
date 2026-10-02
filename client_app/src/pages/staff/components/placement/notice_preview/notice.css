@@ -1,6 +1,6 @@
 .notice-body {
   font-size: 12px;
-  font-family: "Times New Roman", serif;
+  font-family: Arial, Helvetica, sans-serif !important;
   color: black;
 }
 
@@ -12,6 +12,57 @@
   padding: 10mm;
   box-sizing: border-box;
   page-break-after: always;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+/* Constant Institutional Metadata Top Block */
+.constant-top-block {
+  font-family: Arial, Helvetica, sans-serif !important;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.top-doc-meta {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-size: 13.5px !important;
+  font-weight: bold !important;
+  color: #0f172a !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.doc-code {
+  text-align: left;
+}
+
+.doc-revision {
+  text-align: right;
+}
+
+.top-cell-title {
+  text-align: center !important;
+  font-size: 15px !important;
+  font-weight: bold !important;
+  color: #0f172a !important;
+  margin-top: 6px !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+/* Bullet List Item Formatting (Line-by-line) */
+.notice-bullet-list {
+  margin: 4px 0 4px 20px !important;
+  padding: 0 !important;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+}
+
+.notice-bullet-item {
+  margin-bottom: 3px !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+  display: list-item !important;
+  font-family: Arial, Helvetica, sans-serif !important;
 }
 
 .header-image {
@@ -29,6 +80,7 @@
   font-weight: bold;
   margin: 10px 0;
   text-transform: uppercase;
+  font-family: Arial, Helvetica, sans-serif !important;
 }
 
 .notice-meta {

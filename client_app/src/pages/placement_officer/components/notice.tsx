@@ -2,7 +2,6 @@ import { forwardRef } from "react";
 import "./notice.css";
 import noticeHeader from "@/assets/tcet header.png";
 import noticeFooter from "@/assets/tcet footer.png";
-import { BASE_URL } from "@/constant";
 
 export interface NoticeTableRow {
   type: string;
@@ -31,6 +30,7 @@ export interface NoticeData {
   tableData?: NoticeTableRow[];
   College_registration_Link?: string;
   location?: string;
+  deadline?: string;
 }
 
 interface NoticeProps {
@@ -53,6 +53,56 @@ const formatNoticeDate = (dateStr?: string): string => {
     month: "long",
     year: "numeric",
   });
+};
+
+const formatDeadlineSentence = (deadlineStr?: string): string => {
+  if (!deadlineStr || !deadlineStr.trim()) {
+    return "All the eligible and interested students are required to register their names online latest by 30.09.2026 by 10.00 am.";
+  }
+  const trimmed = deadlineStr.trim();
+  if (trimmed.toLowerCase().startsWith("all the eligible")) {
+    return trimmed;
+  }
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
+  if (isoMatch) {
+    const [, year, month, day, hours, minutes] = isoMatch;
+    const dateFormatted = `${day}.${month}.${year}`;
+    let timeFormatted = "10.00 am";
+    if (hours !== undefined && minutes !== undefined) {
+      const h = parseInt(hours, 10);
+      const ampm = h >= 12 ? "pm" : "am";
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      const mStr = minutes.padStart(2, "0");
+      timeFormatted = `${h12}.${mStr} ${ampm}`;
+    }
+    return `All the eligible and interested students are required to register their names online latest by ${dateFormatted} by ${timeFormatted}.`;
+  }
+  return `All the eligible and interested students are required to register their names online latest by ${trimmed}.`;
+};
+
+const renderBulletList = (text?: string) => {
+  if (!text || !text.trim()) return null;
+
+  const rawLines = text
+    .split(/\r?\n|•|\*/)
+    .map((item) => item.replace(/^[\-\s]+/, "").trim())
+    .filter(Boolean);
+
+  if (rawLines.length === 0) return <span>{text}</span>;
+
+  if (rawLines.length === 1 && !text.includes("•") && !text.includes("\n") && !text.includes("*")) {
+    return <span>{text}</span>;
+  }
+
+  return (
+    <ul className="notice-bullet-list">
+      {rawLines.map((line, idx) => (
+        <li key={idx} className="notice-bullet-item">
+          {line}
+        </li>
+      ))}
+    </ul>
+  );
 };
 
 const Notice = forwardRef<HTMLDivElement, NoticeProps>(
@@ -87,12 +137,6 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
 
     const formattedDate = formatNoticeDate(formData.date);
 
-    const collegeLink =
-      formData.College_registration_Link?.trim() ||
-      (formData.companyId
-        ? `${BASE_URL}/student/${isPlacement ? "placement" : "internship"}/registration/${formData.companyId}`
-        : `${BASE_URL}/student/${isPlacement ? "placement" : "internship"}/registration/`);
-
     return (
       <div className="notice-document-wrapper">
         <div className="main-notice" ref={ref}>
@@ -103,7 +147,15 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
               alt="Thakur College of Engineering & Technology"
               className="header-image"
             />
-            <div className="header-divider" />
+          </div>
+
+          {/* Constant Institutional Metadata Top Block */}
+          <div className="constant-top-block">
+            <div className="top-doc-meta">
+              <span className="doc-code">TCET/FRM/MP-04/11</span>
+              <span className="doc-revision">Revision: B</span>
+            </div>
+            <div className="top-cell-title">Training and Placement Cell</div>
           </div>
 
           {/* 2. Notice Title */}
@@ -112,7 +164,7 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
           {/* 3. Notice Metadata (Serial No. & Date) */}
           <div className="flex-container metadata-row">
             <p className="metadata-item">
-              <span className="notice-label">Serial No.:</span>
+              <span className="notice-label">Sr. No:</span>
               <span className="metadata-val">{serialNumber}</span>
             </p>
             <p className="metadata-item">
@@ -129,10 +181,12 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
               <span>{formData.to || "All Eligible Final Year Students"}</span>
             </p>
 
-            {/* 5. Subject */}
-            <p className="notice-row">
-              <span className="notice-label">Subject:</span>
-              <span className="subject-text">{formData.subject}</span>
+            {/* 5. Subject (Both label and content underlined) */}
+            <p className="notice-row subject-row">
+              <u className="subject-underline">
+                <span className="notice-label">Subject:</span>{" "}
+                <span className="subject-text">{formData.subject}</span>
+              </u>
             </p>
 
             {/* 6. Introduction */}
@@ -147,7 +201,7 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
             {formData.eligibility_criteria && (
               <p className="notice-row">
                 <span className="notice-label">Eligibility Criteria:</span>
-                <span>{formData.eligibility_criteria}</span>
+                <div>{renderBulletList(formData.eligibility_criteria)}</div>
               </p>
             )}
 
@@ -193,33 +247,43 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
             {formData.skill_required && formData.skill_required.trim() && (
               <p className="notice-row">
                 <span className="notice-label">Skills Required:</span>
-                <span>{formData.skill_required}</span>
+                <div>{renderBulletList(formData.skill_required)}</div>
               </p>
             )}
 
             {/* 11. Documents to Carry */}
             <p className="notice-row">
               <span className="notice-label">Documents to Carry:</span>
-              <span>
-                {formData.Documents_to_Carry ||
-                  "Updated Resume (2 hard copies), College ID Card, Govt Photo ID Proof, and Marksheets from 10th onwards."}
-              </span>
+              <div>
+                {renderBulletList(
+                  formData.Documents_to_Carry ||
+                    "Updated Resume (2 hard copies), College ID Card, Govt Photo ID Proof, and Marksheets from 10th onwards."
+                )}
+              </div>
             </p>
 
-            {/* 12. Interview / Drive Information */}
+            {/* 12. Selection Process (Replaces Walk-in Interview) */}
             <p className="notice-row">
-              <span className="notice-label">Walk-in Interview:</span>
-              <span>
-                {formData.Walk_in_interview ||
-                  "Schedule and venue details will be communicated via official T&P cell notification."}
-              </span>
+              <span className="notice-label">Selection Process:</span>
+              <div>
+                {renderBulletList(
+                  formData.Walk_in_interview ||
+                    "Schedule and venue details will be communicated via official T&P cell notification."
+                )}
+              </div>
             </p>
 
-            {/* 13. Registration Links */}
+            {/* 13. Deadline to Register */}
+            <p className="notice-row">
+              <span className="notice-label">Deadline to Register:</span>
+              <span>{formatDeadlineSentence(formData.deadline)}</span>
+            </p>
+
+            {/* 14. Company Registration Link (College Registration Link removed) */}
             {formData.Company_registration_Link &&
               formData.Company_registration_Link.trim() && (
                 <p className="notice-row">
-                  <span className="notice-label">Company Registration Link:</span>
+                  <span className="notice-label">Registration Link:</span>
                   <a
                     href={formData.Company_registration_Link}
                     target="_blank"
@@ -231,19 +295,7 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
                 </p>
               )}
 
-            <p className="notice-row">
-              <span className="notice-label">College Registration Link:</span>
-              <a
-                href={collegeLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="notice-link"
-              >
-                {collegeLink}
-              </a>
-            </p>
-
-            {/* 14. Important Note */}
+            {/* 15. Important Note */}
             {formData.Note && formData.Note.trim() && (
               <p className="notice-row note-row">
                 <span className="notice-label">Note:</span>
@@ -252,7 +304,7 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
             )}
           </div>
 
-          {/* 15. Signature / Issuing Authority Block */}
+          {/* 16. Signature / Issuing Authority Block */}
           <div className="fromto-signature-block">
             <p className="sig-sd">Sd/-</p>
             <p className="sig-name">{formData.From || "(Dr. Zahir Aalam)"}</p>
@@ -262,7 +314,7 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
             </p>
           </div>
 
-          {/* 16. Copy To Section (Structured Institutional Layout) */}
+          {/* 17. Copy To Section (Structured Institutional Layout) */}
           <div className="notice-copyto-block">
             <div className="copyto-header">Copy to:</div>
             <div className="copyto-grid">
@@ -289,7 +341,7 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
             </div>
           </div>
 
-          {/* 17. TCET Footer Image */}
+          {/* 18. TCET Footer Image */}
           <img src={noticeFooter} alt="Footer" className="footer-image" />
         </div>
       </div>
@@ -297,4 +349,4 @@ const Notice = forwardRef<HTMLDivElement, NoticeProps>(
   }
 );
 
-export default Notice;
+export default Notice;
